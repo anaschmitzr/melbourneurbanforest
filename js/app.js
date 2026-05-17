@@ -235,14 +235,11 @@ var App = (function () {
         var html = '<div class="popup-content">';
         html += '<div class="popup-title">' + (p.common_name || p.species_display || 'Unknown') + '</div>';
         if (p.scientific_name) html += '<div class="popup-subtitle">' + p.scientific_name + '</div>';
-        if (p.origin) html += row('Origin', p.origin);
-        if (p.family) html += row('Family', p.family);
-        if (p.genus) html += row('Genus', p.genus);
-        if (p.endemic === 'true') html += row('Endemic', 'Yes');
         if (p.age_description) html += row('Age', p.age_description);
         if (p.year_planted) html += row('Planted', p.year_planted);
-        if (p.located_in) html += row('Located in', p.located_in);
         if (p.diameter_breast_height) html += row('DBH', p.diameter_breast_height);
+        if (p.located_in) html += row('Located in', p.located_in);
+        if (p.endemic === 'true') html += row('Endemic', 'Yes');
         html += '</div>';
         return html;
     }
@@ -397,6 +394,7 @@ var App = (function () {
         },
         onEachFeature: function (f, lyr) {
             lyr.bindPopup(popupTree(f.properties), { maxHeight: 350, maxWidth: 260 });
+            lyr.on('click', function () { showTreeInfo(f.properties); });
         }
     });
     var plainTreeGroup = L.featureGroup();
@@ -972,6 +970,200 @@ var App = (function () {
         });
     }
 
+    // ==================== TREE INFO PANEL (iNaturalist + Wikipedia) ====================
+
+    var speciesCache = {};
+
+    function showTreeInfo(p) {
+        var panel = document.getElementById('tree-info-panel');
+        var content = document.getElementById('tree-info-content');
+
+        panel.classList.add('active');
+        content.innerHTML = '<div class="tree-info-loading">Loading species info...</div>';
+
+        var sci = p.scientific_name || '';
+        var common = p.common_name || p.species_display || 'Unknown';
+        var family = p.family || '';
+        var genus = p.genus || '';
+
+        // Build Victoria badges
+        var vicBadges = '';
+        if (p.origin === 'Native')      vicBadges += '<span class="tree-badge badge-native">Native to Victoria</span>';
+        if (p.origin === 'Exotic')       vicBadges += '<span class="tree-badge badge-exotic">Exotic to Victoria</span>';
+        if (p.origin === 'Introduced')   vicBadges += '<span class="tree-badge badge-introduced">Introduced to Victoria</span>';
+        if (p.endemic === 'true')        vicBadges += '<span class="tree-badge badge-endemic">Endemic to Victoria</span>';
+
+        var cacheKey = sci.replace(/ /g, '_');
+
+        function render(data) {
+            var photo = data.inatPhoto || data.wikiThumb || '';
+            var photoAttr = data.inatPhotoAttr || '';
+            var extract = data.wikiExtract || '';
+            var wikiUrl = data.wikiUrl || '';
+            var inatUrl = data.inatUrl || '';
+            var conservationStatus = data.conservationStatus || '';
+            var alaStatus = data.alaStatus || '';  // 'native', 'exotic', or ''
+            var alaUrl = data.alaUrl || '';
+
+            var html = '';
+
+            // Photo
+            if (photo) {
+                html += '<img class="tree-info-photo" src="' + photo + '" alt="' + common + '">';
+                if (photoAttr) html += '<div class="tree-info-photo-attr">' + photoAttr + '</div>';
+            }
+
+            // Title block
+            html += '<h2>' + common + (sci ? ' <span class="tree-info-sci-inline">&middot; ' + sci + '</span>' : '') + '</h2>';
+            if (family) html += '<div class="tree-info-row"><span>Family</span><span>' + family + '</span></div>';
+
+            // Origin badges: Victoria line, then Australia line
+            var allBadges = '';
+            if (vicBadges) allBadges += '<div class="tree-info-badge-row">' + vicBadges + '</div>';
+            if (alaStatus === 'native') {
+                allBadges += '<div class="tree-info-badge-row"><span class="tree-badge badge-au-native">Native to Australia</span></div>';
+            } else if (alaStatus === 'exotic') {
+                allBadges += '<div class="tree-info-badge-row"><span class="tree-badge badge-au-exotic">Exotic to Australia</span></div>';
+            }
+            if (allBadges) html += '<div class="tree-info-badges">' + allBadges + '</div>';
+
+            // Conservation status from iNaturalist
+            if (conservationStatus) {
+                html += '<div class="tree-info-row"><span>Conservation</span><span>' + conservationStatus + '</span></div>';
+            }
+
+            // Wikipedia description
+            if (extract) {
+                html += '<hr>';
+                html += '<div class="tree-info-section-title">About This Species</div>';
+                html += '<p class="tree-info-extract">' + extract + '</p>';
+            }
+
+            // Links
+            html += '<div class="tree-info-links">';
+            if (inatUrl) html += '<a class="tree-info-link" href="' + inatUrl + '" target="_blank" rel="noopener">View on iNaturalist &rarr;</a>';
+            if (wikiUrl) html += '<a class="tree-info-link" href="' + wikiUrl + '" target="_blank" rel="noopener">Read on Wikipedia &rarr;</a>';
+            if (alaUrl) html += '<a class="tree-info-link" href="' + alaUrl + '" target="_blank" rel="noopener">View on Atlas of Living Australia &rarr;</a>';
+            if (!inatUrl && !wikiUrl && sci) {
+                html += '<a class="tree-info-link" href="https://en.wikipedia.org/wiki/' + cacheKey + '" target="_blank" rel="noopener">Search Wikipedia &rarr;</a>';
+            }
+            html += '</div>';
+
+            content.innerHTML = html;
+        }
+
+        // Check cache
+        if (speciesCache[cacheKey]) { render(speciesCache[cacheKey]); return; }
+        if (!sci) { render({}); return; }
+
+        // Fetch all three APIs in parallel
+        var inatPromise = fetch('https://api.inaturalist.org/v1/taxa?q=' + encodeURIComponent(sci) + '&rank=species&per_page=1')
+            .then(function (r) { return r.json(); })
+            .catch(function () { return { results: [] }; });
+
+        var wikiPromise = fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(cacheKey))
+            .then(function (r) { return r.json(); })
+            .catch(function () { return {}; });
+
+        var alaPromise = fetch('https://bie.ala.org.au/ws/species/lookup/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ names: [sci] })
+            })
+            .then(function (r) { return r.json(); })
+            .catch(function () { return []; });
+
+        Promise.all([inatPromise, wikiPromise, alaPromise]).then(function (results) {
+            var inat = results[0];
+            var wiki = results[1];
+            var ala = results[2];
+
+            var merged = {};
+
+            // iNaturalist data
+            if (inat.results && inat.results.length > 0) {
+                var taxon = inat.results[0];
+                if (taxon.default_photo && taxon.default_photo.medium_url) {
+                    merged.inatPhoto = taxon.default_photo.medium_url;
+                    if (taxon.default_photo.attribution) {
+                        merged.inatPhotoAttr = taxon.default_photo.attribution;
+                    }
+                }
+                merged.inatUrl = 'https://www.inaturalist.org/taxa/' + taxon.id;
+                if (taxon.conservation_status && taxon.conservation_status.status_name) {
+                    merged.conservationStatus = taxon.conservation_status.status_name;
+                }
+            }
+
+            // Wikipedia data
+            if (wiki.type === 'standard') {
+                merged.wikiExtract = wiki.extract || '';
+                if (wiki.thumbnail) merged.wikiThumb = wiki.thumbnail.source;
+                if (wiki.content_urls) merged.wikiUrl = wiki.content_urls.desktop.page;
+            }
+
+            // ALA data — determine Australian origin
+            try {
+                var alaResult = null;
+                if (Array.isArray(ala) && ala.length > 0) {
+                    alaResult = ala[0];
+                }
+                if (alaResult && alaResult.guid) {
+                    merged.alaUrl = 'https://bie.ala.org.au/species/' + alaResult.guid;
+                    // Check establishment means / native status from ALA kvp or properties
+                    var kvp = alaResult.kvpValues || [];
+                    var isNativeAU = false;
+                    var isExoticAU = false;
+                    for (var i = 0; i < kvp.length; i++) {
+                        var key = (kvp[i].key || '').toLowerCase();
+                        var val = (kvp[i].value || '').toLowerCase();
+                        if (key.indexOf('establishment') !== -1 || key.indexOf('origin') !== -1 || key.indexOf('native') !== -1) {
+                            if (val.indexOf('native') !== -1) isNativeAU = true;
+                            if (val.indexOf('exotic') !== -1 || val.indexOf('introduced') !== -1 || val.indexOf('naturalised') !== -1) isExoticAU = true;
+                        }
+                    }
+                    // Fallback heuristic: if the species is in APC (Australian Plant Census)
+                    // and no explicit status found, infer from kingdom + name patterns
+                    if (!isNativeAU && !isExoticAU) {
+                        var nameAuth = (alaResult.author || '').toLowerCase();
+                        var acceptedName = (alaResult.acceptedConceptName || alaResult.name || '').toLowerCase();
+                        // Species with Australian type authorities or in APC are likely native
+                        if (alaResult.rankString === 'species') {
+                            // Check linked counts or other indicators
+                            var infoSrc = (alaResult.infoSourceName || '').toLowerCase();
+                            if (infoSrc.indexOf('apc') !== -1 || infoSrc.indexOf('australian plant census') !== -1) {
+                                // APC listed — could be native or naturalised; check further
+                                var isAustralianGenus = /^(eucalyptus|corymbia|melaleuca|acacia|banksia|grevillea|callistemon|leptospermum|allocasuarina|angophora|brachychiton|casuarina|ficus|flindersia|syzygium|tristaniopsis|waterhousea|xanthorrhoea)/i.test(sci);
+                                if (isAustralianGenus) {
+                                    isNativeAU = true;
+                                }
+                            }
+                        }
+                    }
+                    if (isNativeAU) merged.alaStatus = 'native';
+                    else if (isExoticAU) merged.alaStatus = 'exotic';
+                }
+            } catch (e) {
+                // ALA failed — no Australia badge, that's fine
+            }
+
+            speciesCache[cacheKey] = merged;
+            render(merged);
+        });
+    }
+
+    function closeTreePanel() {
+        document.getElementById('tree-info-panel').classList.remove('active');
+    }
+
+    // Close panel with Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeTreePanel();
+    });
+
+    // Close panel when clicking outside it (on the map)
+    map.on('click', function () { closeTreePanel(); });
+
     // Precompute SA2 assignments in background
     setTimeout(precomputeSA2, 2000);
 
@@ -991,6 +1183,7 @@ var App = (function () {
         showAISettings: showAISettings,
         saveAIKey: saveAIKey,
         setAreaFilter: setAreaFilter,
+        closeTreePanel: closeTreePanel,
         map: map
     };
 
