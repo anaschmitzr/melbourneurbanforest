@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Melbourne Urban Forest Dashboard</title>
+    <link rel="stylesheet" href="css/leaflet.css">
+    <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+    <link rel="stylesheet" href="css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div id="loading">
+    <div class="spinner"></div>
+    <span>Loading 82,064 trees...</span>
+</div>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        <h1>Melbourne Urban Forest</h1>
+        <p>Neighborhood Analysis Dashboard</p>
+    </div>
+    <div class="sidebar-content">
+
+        <div class="area-filter-wrapper">
+            <label for="area-filter">Focus Area</label>
+            <select id="area-filter" onchange="App.setAreaFilter(this.value)">
+                <option value="">All Melbourne</option>
+            </select>
+        </div>
+
+        <div class="section-title">Neighborhood Analysis</div>
+
+        <!-- Canopy Coverage -->
+        <div class="layer-panel" id="panel-canopy">
+            <div class="layer-header" onclick="App.togglePanel('panel-canopy')">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" checked onchange="App.toggleLayer('canopy', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Canopy Coverage</span>
+                <span class="layer-count">18</span>
+                <span class="layer-chevron">&#9662;</span>
+            </div>
+            <div class="layer-body">
+                <select id="mode-canopy" onchange="App.updateStyle('canopy', this.value)">
+                    <option value="grade">Grade (-5 to +5)</option>
+                    <option value="passfail">Pass / Fail (30% target)</option>
+                    <option value="percent">Canopy Percent</option>
+                </select>
+                <div id="legend-canopy" class="legend"></div>
+            </div>
+        </div>
+
+        <!-- Tree Diversity -->
+        <div class="layer-panel collapsed" id="panel-diversity">
+            <div class="layer-header" onclick="App.togglePanel('panel-diversity')">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="App.toggleLayer('diversity', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Tree Diversity</span>
+                <span class="layer-count">18</span>
+                <span class="layer-chevron">&#9662;</span>
+            </div>
+            <div class="layer-body">
+                <select id="mode-diversity" onchange="App.updateStyle('diversity', this.value)">
+                    <option value="species_grade">Species Grade</option>
+                    <option value="genus_grade">Genus Grade</option>
+                    <option value="family_grade">Family Grade</option>
+                    <option value="species_passfail">Species Pass/Fail (10%)</option>
+                    <option value="genus_passfail">Genus Pass/Fail (20%)</option>
+                    <option value="family_passfail">Family Pass/Fail (30%)</option>
+                </select>
+                <div id="legend-diversity" class="legend"></div>
+            </div>
+        </div>
+
+        <!-- Tree Origin (SA2) -->
+        <div class="layer-panel collapsed" id="panel-origin-sa2">
+            <div class="layer-header" onclick="App.togglePanel('panel-origin-sa2')">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="App.toggleLayer('origin-sa2', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Tree Origin (SA2)</span>
+                <span class="layer-count">18</span>
+                <span class="layer-chevron">&#9662;</span>
+            </div>
+            <div class="layer-body">
+                <select id="mode-origin-sa2" onchange="App.updateStyle('origin-sa2', this.value)">
+                    <option value="native_pct">Native %</option>
+                    <option value="exotic_pct">Exotic %</option>
+                    <option value="introduced_pct">Introduced %</option>
+                    <option value="endemic_count">Endemic Count</option>
+                </select>
+                <div id="legend-origin-sa2" class="legend"></div>
+            </div>
+        </div>
+
+        <!-- Building Park Access -->
+        <div class="layer-panel collapsed" id="panel-buildings">
+            <div class="layer-header" onclick="App.togglePanel('panel-buildings')">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="App.toggleLayer('buildings', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Park Access</span>
+                <span class="layer-count">15,225</span>
+                <span class="layer-chevron">&#9662;</span>
+            </div>
+            <div class="layer-body">
+                <select id="mode-buildings" onchange="App.updateStyle('buildings', this.value)">
+                    <option value="grade">Grade (-5 to +5)</option>
+                    <option value="passfail">Pass / Fail (300m)</option>
+                    <option value="distance">Distance (m)</option>
+                </select>
+                <div id="legend-buildings" class="legend"></div>
+            </div>
+        </div>
+
+        <div class="section-title">Individual Trees</div>
+
+        <!-- Trees -->
+        <div class="layer-panel" id="panel-trees">
+            <div class="layer-header" onclick="App.togglePanel('panel-trees')">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="App.toggleLayer('trees', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Trees</span>
+                <span class="layer-count">82,064</span>
+                <span class="layer-chevron">&#9662;</span>
+            </div>
+            <div class="layer-body">
+                <select id="mode-trees" onchange="App.updateStyle('trees', this.value)">
+                    <option value="origin">Origin</option>
+                    <option value="endemic">Endemic</option>
+                    <option value="family">Family (top 8)</option>
+                    <option value="genus">Genus (top 8)</option>
+                    <option value="species">Species (top 10)</option>
+                </select>
+                <div id="legend-trees" class="legend"></div>
+            </div>
+        </div>
+
+        <div class="section-title">Reference Layers</div>
+
+        <!-- Parks -->
+        <div class="layer-panel" id="panel-parks">
+            <div class="layer-header">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" checked onchange="App.toggleLayer('parks', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Parks (&ge;0.5ha)</span>
+            </div>
+        </div>
+
+        <!-- SA2 Boundaries -->
+        <div class="layer-panel" id="panel-sa2">
+            <div class="layer-header">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" checked onchange="App.toggleLayer('sa2', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">SA2 Boundaries</span>
+            </div>
+        </div>
+
+        <!-- Municipal Boundary -->
+        <div class="layer-panel" id="panel-municipal">
+            <div class="layer-header">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" checked onchange="App.toggleLayer('municipal', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Municipal Boundary</span>
+            </div>
+        </div>
+
+        <div class="section-title">Ask the Data</div>
+        <div id="chat-panel">
+            <div id="chat-messages">
+                <div class="chat-msg bot">
+                    <p>Ask me anything about Melbourne's urban forest! Try:</p>
+                    <ul>
+                        <li>"How many native trees in Carlton?"</li>
+                        <li>"Which SA2 has the highest canopy?"</li>
+                        <li>"Most common species"</li>
+                    </ul>
+                </div>
+            </div>
+            <div id="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')App.ask()">
+                <button id="chat-send" onclick="App.ask()">&#10148;</button>
+            </div>
+            <button id="ai-connect-btn" onclick="App.showAISettings()">Connect Gemini AI (optional)</button>
+        </div>
+
+    </div>
+</div>
+
+<div id="ai-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal-box">
+        <h3>Connect Gemini AI</h3>
+        <p>Add a free Google Gemini API key for smarter, conversational answers. Get one at <strong>ai.google.dev</strong></p>
+        <input type="text" id="gemini-key-input" placeholder="Paste your Gemini API key...">
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="document.getElementById('ai-modal').style.display='none'">Cancel</button>
+            <button class="btn-primary" onclick="App.saveAIKey()">Save</button>
+        </div>
+        <p id="ai-status" class="ai-status"></p>
+    </div>
+</div>
+
+<button id="sidebar-toggle" onclick="App.toggleSidebar()">&#9776;</button>
+<div id="map"></div>
+
+<!-- Leaflet & plugins -->
+<script src="js/leaflet.js"></script>
+<script src="js/L.Control.Locate.min.js"></script>
+<script src="js/leaflet-hash.js"></script>
+
+<!-- Data -->
+<script src="data/municipalboundary_1.js"></script>
+<script src="data/SA2_Melbourne_boundaries_2.js"></script>
+<script src="data/PPRZ_Parks_more_than_05h_3.js"></script>
+<script src="data/sa2_canopy_coverage_4.js"></script>
+<script src="data/sa2_tree_diversity_5.js"></script>
+<script src="data/sa2_tree_origin_6.js"></script>
+<script src="data/building_nearest_parkbuilding_polygon_7.js"></script>
+<script src="data/trees_species_dim_8.js"></script>
+
+<!-- App -->
+<script src="js/app.js"></script>
+</body>
+</html>
