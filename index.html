@@ -118,6 +118,22 @@
                     <option value="distance">Distance (m)</option>
                 </select>
                 <div id="legend-buildings" class="legend"></div>
+                <div class="filter-toggle collapsed" onclick="App.toggleFilter(this)">
+                    <span class="filter-chevron">&#9662;</span> Filters
+                </div>
+                <div class="filter-group collapsed">
+                    <label class="filter-label">Filter</label>
+                    <select id="filter-buildings-access" onchange="App.applyBuildingFilter()">
+                        <option value="">All buildings</option>
+                        <option value="Pass">Within 300m of park</option>
+                        <option value="Fail">Further than 300m</option>
+                    </select>
+                    <label class="filter-label">Max distance (m)</label>
+                    <div class="filter-slider-row">
+                        <input type="range" id="filter-buildings-dist" min="0" max="1000" value="1000" step="50" oninput="App.applyBuildingFilter()">
+                        <span id="filter-buildings-dist-val">1000m</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -143,6 +159,30 @@
                     <option value="species">Species (top 10)</option>
                 </select>
                 <div id="legend-trees" class="legend"></div>
+                <div class="filter-toggle collapsed" onclick="App.toggleFilter(this)">
+                    <span class="filter-chevron">&#9662;</span> Filters
+                </div>
+                <div class="filter-group collapsed">
+                    <label class="filter-label">Filter</label>
+                    <select id="filter-tree-origin" onchange="App.applyUITreeFilter()">
+                        <option value="">All origins</option>
+                        <option value="Native">Native</option>
+                        <option value="Exotic">Exotic</option>
+                        <option value="Introduced">Introduced</option>
+                    </select>
+                    <select id="filter-tree-endemic" onchange="App.applyUITreeFilter()">
+                        <option value="">All (endemic &amp; non)</option>
+                        <option value="true">Endemic only</option>
+                        <option value="false">Non-endemic only</option>
+                    </select>
+                    <select id="filter-tree-family" onchange="App.applyUITreeFilter()">
+                        <option value="">All families</option>
+                    </select>
+                    <select id="filter-tree-species" onchange="App.applyUITreeFilter()">
+                        <option value="">All species</option>
+                    </select>
+                    <button class="filter-reset" onclick="App.resetTreeFilters()">Reset filters</button>
+                </div>
             </div>
         </div>
 
@@ -185,34 +225,23 @@
         <div id="chat-panel">
             <div id="chat-messages">
                 <div class="chat-msg bot">
-                    <p>Ask me anything about Melbourne's urban forest! Try:</p>
+                    <p>Ask questions or control the map! Try:</p>
                     <ul>
-                        <li>"How many native trees in Carlton?"</li>
+                        <li>"Show only native trees"</li>
+                        <li>"Filter to Carlton and show canopy"</li>
                         <li>"Which SA2 has the highest canopy?"</li>
-                        <li>"Most common species"</li>
+                        <li>"Reset the map"</li>
                     </ul>
+                    <p style="font-size:11px;opacity:0.7;margin-top:6px;">Connect DeepSeek AI for map filtering</p>
                 </div>
             </div>
             <div id="chat-input-row">
                 <input type="text" id="chat-input" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')App.ask()">
                 <button id="chat-send" onclick="App.ask()">&#10148;</button>
             </div>
-            <button id="ai-connect-btn" onclick="App.showAISettings()">Connect Gemini AI (optional)</button>
+            <div id="ai-connect-btn" class="ai-status-label">Checking AI...</div>
         </div>
 
-    </div>
-</div>
-
-<div id="ai-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-    <div class="modal-box">
-        <h3>Connect Gemini AI</h3>
-        <p>Add a free Google Gemini API key for smarter, conversational answers. Get one at <strong>ai.google.dev</strong></p>
-        <input type="text" id="gemini-key-input" placeholder="Paste your Gemini API key...">
-        <div class="modal-actions">
-            <button class="btn-secondary" onclick="document.getElementById('ai-modal').style.display='none'">Cancel</button>
-            <button class="btn-primary" onclick="App.saveAIKey()">Save</button>
-        </div>
-        <p id="ai-status" class="ai-status"></p>
     </div>
 </div>
 

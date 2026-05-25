@@ -4,6 +4,8 @@ var App = (function () {
     // ==================== COLOR SCALES ====================
 
     var GRADE_COLORS = {
+        '-10': '#67001f', '-9': '#7a0225', '-8': '#8c032b',
+        '-7': '#980632', '-6': '#a50a2a',
         '-5': '#a50026', '-4': '#d73027', '-3': '#f46d43',
         '-2': '#fdae61', '-1': '#fee08b', '0': '#ffffbf',
         '1': '#d9ef8b', '2': '#a6d96a', '3': '#66bd63',
@@ -28,7 +30,7 @@ var App = (function () {
     // ==================== UTILITIES ====================
 
     function gradeColor(g) {
-        g = Math.round(Math.max(-5, Math.min(5, g)));
+        g = Math.round(Math.max(-10, Math.min(5, g)));
         return GRADE_COLORS[String(g)] || '#999';
     }
 
@@ -173,7 +175,7 @@ var App = (function () {
 
     var topFamilies = topValues(json_trees_species_dim_8, 'family', 8);
     var topGenera = topValues(json_trees_species_dim_8, 'genus', 8);
-    var topSpecies = topValues(json_trees_species_dim_8, 'species_display', 10);
+    var topSpecies = topValues(json_trees_species_dim_8, 'common_name', 10);
 
     // ==================== POPUP BUILDERS ====================
 
@@ -289,7 +291,7 @@ var App = (function () {
         else if (mode === 'endemic') fill = ENDEMIC_COLORS[p.endemic] || '#888';
         else if (mode === 'family') fill = catColor(p.family, topFamilies);
         else if (mode === 'genus') fill = catColor(p.genus, topGenera);
-        else if (mode === 'species') fill = catColor(p.species_display, topSpecies);
+        else if (mode === 'species') fill = catColor(p.common_name, topSpecies);
         else fill = '#888';
         return {
             pane: 'pane-trees', radius: 4, fillColor: fill,
@@ -444,18 +446,84 @@ var App = (function () {
 
     // ==================== LEGEND RENDERING ====================
 
-    function renderGradeLegend(el) {
-        var html = '';
-        for (var g = -5; g <= 5; g++) {
-            html += '<div class="legend-item"><span class="legend-swatch" style="background:' + GRADE_COLORS[String(g)] + '"></span>' + (g > 0 ? '+' : '') + g + '</div>';
+    // Grade descriptions for canopy
+    var CANOPY_GRADE_DESC = {
+        '5': '54–60%', '4': '48–54%', '3': '42–48%', '2': '36–42%', '1': '30–36%',
+        '0': '30%', '-1': '24–30%', '-2': '18–24%', '-3': '12–18%', '-4': '6–12%', '-5': '0–6%'
+    };
+
+    // Grade descriptions for park access
+    var ACCESS_GRADE_DESC = {
+        '5': '0–60m', '4': '60–120m', '3': '120–180m', '2': '180–240m', '1': '240–300m',
+        '0': '300m', '-1': '300–360m', '-2': '360–420m', '-3': '420–480m', '-4': '480–540m', '-5': '540m+'
+    };
+
+    var SPECIES_GRADE_DESC = {
+        '3': '1–4%', '2': '4–7%', '1': '7–10%',
+        '0': '10%', '-1': '10–13%', '-2': '13–16%', '-3': '16–19%', '-4': '19–22%',
+        '-5': '22–25%', '-6': '25–28%', '-7': '28–31%', '-8': '31–34%', '-9': '34–37%', '-10': '37%+'
+    };
+
+    var GENUS_GRADE_DESC = {
+        '3': '5–10%', '2': '10–15%', '1': '15–20%',
+        '0': '20%', '-1': '20–25%', '-2': '25–30%', '-3': '30–35%', '-4': '35–40%',
+        '-5': '40–45%', '-6': '45–50%', '-7': '50–55%', '-8': '55–60%', '-9': '60–65%', '-10': '65%+'
+    };
+
+    var FAMILY_GRADE_DESC = {
+        '3': '15–20%', '2': '20–25%', '1': '25–30%',
+        '0': '30%', '-1': '30–35%', '-2': '35–40%', '-3': '40–45%', '-4': '45–50%',
+        '-5': '50–55%', '-6': '55–60%', '-7': '60–65%', '-8': '65–70%', '-9': '70–75%', '-10': '75%+'
+    };
+
+    function renderGradeLegend(el, descriptions, twoCols) {
+        var desc = descriptions || {};
+        // Derive grade range from description keys if provided, else default -5..+5
+        var keys = Object.keys(desc).map(Number);
+        var maxG = keys.length ? Math.max.apply(null, keys) : 5;
+        var minG = keys.length ? Math.min.apply(null, keys) : -5;
+        var grades = [];
+        for (var g = maxG; g >= minG; g--) grades.push(g);
+
+        function renderRow(g) {
+            var label = (g > 0 ? '+' : '') + g;
+            var detail = desc[String(g)] || '';
+            var color = GRADE_COLORS[String(g)] || '#999';
+            var h = '<div class="legend-row"><span class="legend-swatch" style="background:' + color + '"></span><span class="legend-label">' + label + '</span>';
+            if (detail) h += '<span class="legend-detail">' + detail + '</span>';
+            h += '</div>';
+            return h;
         }
-        el.innerHTML = html;
+
+        if (twoCols) {
+            // Split: positives+zero in left col, negatives in right col
+            var col1 = [], col2 = [];
+            grades.forEach(function (g) { (g >= 0 ? col1 : col2).push(g); });
+            var html = '<div class="legend-two-col">';
+            html += '<div class="legend-vertical">';
+            col1.forEach(function (g) { html += renderRow(g); });
+            html += '</div><div class="legend-vertical">';
+            col2.forEach(function (g) { html += renderRow(g); });
+            html += '</div></div>';
+            el.innerHTML = html;
+        } else {
+            var html = '<div class="legend-vertical">';
+            grades.forEach(function (g) { html += renderRow(g); });
+            html += '</div>';
+            el.innerHTML = html;
+        }
     }
 
-    function renderPassFailLegend(el, labels) {
+    function renderPassFailLegend(el, labels, details) {
+        var passLabel = labels ? labels[0] : 'Pass';
+        var failLabel = labels ? labels[1] : 'Fail';
+        var passDetail = details ? details[0] : '';
+        var failDetail = details ? details[1] : '';
         el.innerHTML =
-            '<div class="legend-item"><span class="legend-swatch" style="background:#27ae60"></span>' + (labels ? labels[0] : 'Pass') + '</div>' +
-            '<div class="legend-item"><span class="legend-swatch" style="background:#c0392b"></span>' + (labels ? labels[1] : 'Fail') + '</div>';
+            '<div class="legend-vertical">' +
+            '<div class="legend-row"><span class="legend-swatch" style="background:#27ae60"></span><span class="legend-label">' + passLabel + '</span><span class="legend-detail">' + passDetail + '</span></div>' +
+            '<div class="legend-row"><span class="legend-swatch" style="background:#c0392b"></span><span class="legend-label">' + failLabel + '</span><span class="legend-detail">' + failDetail + '</span></div>' +
+            '</div>';
     }
 
     function renderGradientLegend(el, minLabel, maxLabel, colors) {
@@ -466,13 +534,35 @@ var App = (function () {
             '</div>';
     }
 
-    function renderCatLegend(el, items, colorFn) {
-        var html = '';
-        items.forEach(function (item) {
-            html += '<div class="legend-item"><span class="legend-swatch" style="background:' + colorFn(item) + '"></span>' + item + '</div>';
-        });
-        html += '<div class="legend-item"><span class="legend-swatch" style="background:#888"></span>Other</div>';
-        el.innerHTML = html;
+    function renderCatLegend(el, items, colorFn, twoCols) {
+        var all = items.slice();
+        all.push('Other');
+        if (twoCols) {
+            var mid = Math.ceil(all.length / 2);
+            var col1 = all.slice(0, mid);
+            var col2 = all.slice(mid);
+            var html = '<div class="legend-two-col">';
+            html += '<div class="legend-vertical">';
+            col1.forEach(function (item) {
+                var c = item === 'Other' ? '#888' : colorFn(item);
+                html += '<div class="legend-row"><span class="legend-swatch" style="background:' + c + '"></span><span class="legend-label">' + item + '</span></div>';
+            });
+            html += '</div><div class="legend-vertical">';
+            col2.forEach(function (item) {
+                var c = item === 'Other' ? '#888' : colorFn(item);
+                html += '<div class="legend-row"><span class="legend-swatch" style="background:' + c + '"></span><span class="legend-label">' + item + '</span></div>';
+            });
+            html += '</div></div>';
+            el.innerHTML = html;
+        } else {
+            var html = '<div class="legend-vertical">';
+            all.forEach(function (item) {
+                var c = item === 'Other' ? '#888' : colorFn(item);
+                html += '<div class="legend-row"><span class="legend-swatch" style="background:' + c + '"></span><span class="legend-label">' + item + '</span></div>';
+            });
+            html += '</div>';
+            el.innerHTML = html;
+        }
     }
 
     function updateLegend(layerName, mode) {
@@ -480,12 +570,17 @@ var App = (function () {
         if (!el) return;
 
         if (layerName === 'canopy') {
-            if (mode === 'grade') renderGradeLegend(el);
-            else if (mode === 'passfail') renderPassFailLegend(el);
+            if (mode === 'grade') renderGradeLegend(el, CANOPY_GRADE_DESC, true);
+            else if (mode === 'passfail') renderPassFailLegend(el, ['Pass', 'Fail'], ['≥ 30% canopy', '< 30% canopy']);
             else renderGradientLegend(el, '0%', '55%', SEQ_GREEN);
         }
         else if (layerName === 'diversity') {
-            if (mode.indexOf('grade') >= 0) renderGradeLegend(el);
+            if (mode === 'species_grade') renderGradeLegend(el, SPECIES_GRADE_DESC, true);
+            else if (mode === 'genus_grade') renderGradeLegend(el, GENUS_GRADE_DESC, true);
+            else if (mode === 'family_grade') renderGradeLegend(el, FAMILY_GRADE_DESC, true);
+            else if (mode === 'species_passfail') renderPassFailLegend(el, ['Pass', 'Fail'], ['Max species ≤ 10%', 'Max species > 10%']);
+            else if (mode === 'genus_passfail') renderPassFailLegend(el, ['Pass', 'Fail'], ['Max genus ≤ 20%', 'Max genus > 20%']);
+            else if (mode === 'family_passfail') renderPassFailLegend(el, ['Pass', 'Fail'], ['Max family ≤ 30%', 'Max family > 30%']);
             else renderPassFailLegend(el);
         }
         else if (layerName === 'origin-sa2') {
@@ -495,25 +590,33 @@ var App = (function () {
             else renderGradientLegend(el, '0', '50', SEQ_GOLD);
         }
         else if (layerName === 'buildings') {
-            if (mode === 'grade') renderGradeLegend(el);
-            else if (mode === 'passfail') renderPassFailLegend(el);
+            if (mode === 'grade') renderGradeLegend(el, ACCESS_GRADE_DESC, true);
+            else if (mode === 'passfail') renderPassFailLegend(el, ['Pass', 'Fail'], ['≤ 300m to park', '> 300m to park']);
             else renderGradientLegend(el, '0 m', '1000 m', DIST_SCALE);
         }
         else if (layerName === 'trees') {
             if (mode === 'origin') {
                 el.innerHTML =
-                    '<div class="legend-item"><span class="legend-swatch" style="background:#27ae60"></span>Native</div>' +
-                    '<div class="legend-item"><span class="legend-swatch" style="background:#f39c12"></span>Introduced</div>' +
-                    '<div class="legend-item"><span class="legend-swatch" style="background:#c0392b"></span>Exotic</div>';
+                    '<div class="legend-two-col">' +
+                    '<div class="legend-vertical">' +
+                    '<div class="legend-row"><span class="legend-swatch" style="background:#27ae60"></span><span class="legend-label">Native</span></div>' +
+                    '<div class="legend-row"><span class="legend-swatch" style="background:#f39c12"></span><span class="legend-label">Introduced</span></div>' +
+                    '</div><div class="legend-vertical">' +
+                    '<div class="legend-row"><span class="legend-swatch" style="background:#c0392b"></span><span class="legend-label">Exotic</span></div>' +
+                    '</div></div>';
             }
             else if (mode === 'endemic') {
                 el.innerHTML =
-                    '<div class="legend-item"><span class="legend-swatch" style="background:#f1c40f"></span>Endemic</div>' +
-                    '<div class="legend-item"><span class="legend-swatch" style="background:#95a5a6"></span>Not Endemic</div>';
+                    '<div class="legend-two-col">' +
+                    '<div class="legend-vertical">' +
+                    '<div class="legend-row"><span class="legend-swatch" style="background:#f1c40f"></span><span class="legend-label">Endemic</span></div>' +
+                    '</div><div class="legend-vertical">' +
+                    '<div class="legend-row"><span class="legend-swatch" style="background:#95a5a6"></span><span class="legend-label">Not Endemic</span></div>' +
+                    '</div></div>';
             }
-            else if (mode === 'family') renderCatLegend(el, topFamilies, function (v) { return catColor(v, topFamilies); });
-            else if (mode === 'genus') renderCatLegend(el, topGenera, function (v) { return catColor(v, topGenera); });
-            else if (mode === 'species') renderCatLegend(el, topSpecies, function (v) { return catColor(v, topSpecies); });
+            else if (mode === 'family') renderCatLegend(el, topFamilies, function (v) { return catColor(v, topFamilies); }, true);
+            else if (mode === 'genus') renderCatLegend(el, topGenera, function (v) { return catColor(v, topGenera); }, true);
+            else if (mode === 'species') renderCatLegend(el, topSpecies, function (v) { return catColor(v, topSpecies); }, true);
         }
     }
 
@@ -598,28 +701,11 @@ var App = (function () {
             });
         });
 
-        // Buildings: rebuild with filtered data
-        var buildingsOn = map.hasLayer(layers.buildings);
-        if (buildingsOn) map.removeLayer(layers.buildings);
-        layerBuildings = createBuildingsLayer(filterSpatialData(json_building_nearest_parkbuilding_polygon_7));
-        layers.buildings = layerBuildings;
-        geoJsonLayers.buildings = layerBuildings;
-        if (buildingsOn) layerBuildings.addTo(map);
+        // Buildings: re-apply building filter (respects area + UI filters)
+        applyBuildingFilter();
 
-        // Trees: swap markers in/out of plain group
-        var treesOn = map.hasLayer(plainTreeGroup);
-        if (treesOn) map.removeLayer(plainTreeGroup);
-        plainTreeGroup.clearLayers();
-
-        var matching = currentFilter
-            ? allTreeMarkers.filter(function (m) { return m.feature.properties._sa2 === currentFilter; })
-            : allTreeMarkers;
-        matching.forEach(function (m) { plainTreeGroup.addLayer(m); });
-        if (treesOn) plainTreeGroup.addTo(map);
-
-        // Update tree count in sidebar
-        var countEl = document.querySelector('#panel-trees .layer-count');
-        if (countEl) countEl.textContent = matching.length.toLocaleString();
+        // Trees: re-apply UI tree filter (respects area + UI filters)
+        applyUITreeFilter();
     }
 
     function setAreaFilter(sa2Name) {
@@ -683,7 +769,7 @@ var App = (function () {
 
         var speciesMatch = null;
         topSpecies.forEach(function (sp) { if (q.toLowerCase().indexOf(sp.toLowerCase()) >= 0) speciesMatch = sp; });
-        if (speciesMatch) result = result.filter(function (f) { return f.properties.species_display === speciesMatch; });
+        if (speciesMatch) result = result.filter(function (f) { return f.properties.common_name === speciesMatch; });
 
         return { trees: result, location: loc, origin: origin, age: age, family: familyMatch, species: speciesMatch };
     }
@@ -775,13 +861,13 @@ var App = (function () {
 
         // "Most common species/family/genus"
         if (/most common|most popular|most frequent|dominant/i.test(q)) {
-            var prop = 'species_display';
+            var prop = 'common_name';
             if (/family|families/i.test(q)) prop = 'family';
             else if (/genus|genera/i.test(q)) prop = 'genus';
             var ranked = freqCount(f.trees, prop);
             if (ranked.length === 0) return 'No matching trees found.';
             var top5 = ranked.slice(0, 5);
-            var label = prop === 'species_display' ? 'species' : prop;
+            var label = prop === 'common_name' ? 'species' : prop;
             var where = f.location ? ' in <strong>' + f.location + '</strong>' : '';
             var html = 'Top ' + label + where + ':<br>';
             top5.forEach(function (item, i) {
@@ -809,7 +895,7 @@ var App = (function () {
         // Generic location query
         if (f.location && f.trees.length > 0) {
             var origin_freq = freqCount(f.trees, 'origin');
-            var topSp = freqCount(f.trees, 'species_display').slice(0, 3);
+            var topSp = freqCount(f.trees, 'common_name').slice(0, 3);
             var html = '<strong>' + f.location + '</strong> has <span class="chat-number">' + f.trees.length.toLocaleString() + '</span> trees.<br>';
             html += 'Origin mix: ';
             origin_freq.forEach(function (o, i) {
@@ -838,48 +924,299 @@ var App = (function () {
         return "I can answer questions about tree counts, species, origins, canopy coverage, diversity grades, and park access. Try: <em>\"How many native trees in Carlton?\"</em> or <em>\"Which SA2 has the highest canopy?\"</em>";
     }
 
-    // ==================== GEMINI AI ====================
+    // ==================== DEEPSEEK AI (via proxy) ====================
 
-    var geminiKey = localStorage.getItem('gemini_api_key') || '';
+    var AI_PROXY = 'https://melbourne-forest-proxy.onrender.com';
+
+    var MAP_COMMANDS_SCHEMA =
+        'You can control the map by including a JSON block in your response.\n' +
+        'Wrap commands in ```json\\n{...}\\n``` so the frontend can parse them.\n\n' +
+        'Available commands (include only the ones needed):\n' +
+        '{\n' +
+        '  "layers": { "<name>": true/false },       // toggle layers on/off\n' +
+        '  "mode": { "<layer>": "<mode>" },           // change layer style mode\n' +
+        '  "area": "<SA2 name>" or "",                // filter to SA2 or "" for all\n' +
+        '  "treeFilter": { "field": "<prop>", "value": "<val>" } or null  // filter trees\n' +
+        '}\n\n' +
+        'Layer names: canopy, diversity, origin-sa2, buildings, trees, parks, sa2, municipal\n' +
+        'Layer modes:\n' +
+        '  canopy: grade, passfail, percent\n' +
+        '  diversity: species_grade, genus_grade, family_grade, species_passfail, genus_passfail, family_passfail\n' +
+        '  origin-sa2: native_pct, exotic_pct, introduced_pct, endemic_count\n' +
+        '  buildings: grade, passfail, distance\n' +
+        '  trees: origin, endemic, family, genus, species\n\n' +
+        'Tree filter fields: origin (Native/Introduced/Exotic), endemic (true/false), family, genus, common_name\n' +
+        'Set treeFilter to null to clear any active filter.\n';
 
     var DATA_SCHEMA = 'Datasets:\n' +
-        '1. trees (82,064 records): common_name, scientific_name, genus, family, origin (Native/Introduced/Exotic), endemic (true/false), age_description, year_planted, precinct, diameter_breast_height, species_display\n' +
+        '1. trees (82,064 records): common_name, scientific_name, genus, family, origin (Native/Introduced/Exotic), endemic (true/false), age_description, year_planted, precinct, diameter_breast_height\n' +
         '2. sa2_canopy (18 SA2 areas): sa2_name21, canopy_percent, canopy_grade_5 (-5 to +5), pass_fail_30\n' +
         '3. sa2_diversity (18 SA2 areas): sa2_name21, total_trees, max_species_pct, max_genus_pct, max_family_pct, species_grade, genus_grade, family_grade, species_pass, genus_pass, family_pass\n' +
         '4. sa2_origin (18 SA2 areas): sa2_name21, total_trees, native_percent, introduced_percent, exotic_percent, endemic_count\n' +
         '5. buildings (15,225 records): routing_distance_m, pass_fail_300, park_access_grade\n';
 
-    function buildGeminiPrompt(question, localAnswer) {
+    function buildAIPrompt(question, localAnswer) {
         var stats = 'Quick stats: ' + trees.length + ' total trees, ' + sa2Names.length + ' SA2 neighborhoods (' + sa2Names.join(', ') + ').\n';
-        stats += 'Precincts: ' + precincts.join(', ') + '.\n';
         stats += 'Top species: ' + topSpecies.join(', ') + '.\n';
         stats += 'Top families: ' + topFamilies.join(', ') + '.\n';
         if (localAnswer) stats += '\nLocal query engine result: ' + localAnswer.replace(/<[^>]+>/g, '') + '\n';
 
-        return 'You are a helpful assistant for the Melbourne Urban Forest Dashboard. You answer questions about urban trees, canopy coverage, tree diversity, and park accessibility in the City of Melbourne.\n\n' +
+        return 'You are a helpful assistant for the Melbourne Urban Forest Dashboard. You can both answer questions AND control the map.\n\n' +
             DATA_SCHEMA + '\n' + stats + '\n' +
-            'Answer this question concisely (2-3 sentences max). Use specific numbers from the local query result if provided. If you cannot answer from the data provided, say so.\n\n' +
+            MAP_COMMANDS_SCHEMA + '\n' +
+            'Rules:\n' +
+            '- If the user asks to SHOW, FILTER, HIGHLIGHT, or DISPLAY something on the map, include a JSON command block AND a short explanation (1-2 sentences).\n' +
+            '- If the user just asks a QUESTION (how many, which, what), answer concisely (2-3 sentences) using the local data. Only include JSON commands if it helps illustrate the answer.\n' +
+            '- If the user says "reset", "clear", or "show all", return commands to clear filters and show default layers.\n' +
+            '- Always keep your text answer SHORT.\n\n' +
             'Question: ' + question;
     }
 
-    async function askGemini(question) {
-        if (!geminiKey) return null;
-        var localAnswer = smartAnswer(question);
-        var prompt = buildGeminiPrompt(question, localAnswer);
+    // Active tree filter state
+    var activeTreeFilter = null;
+
+    function applyTreeFilter(filter) {
+        activeTreeFilter = filter;
+        var treesOn = map.hasLayer(activeTreeGroup);
+        if (treesOn) map.removeLayer(activeTreeGroup);
+        plainTreeGroup.clearLayers();
+
+        var matching;
+        if (filter) {
+            matching = allTreeMarkers.filter(function (m) {
+                var val = m.feature.properties[filter.field];
+                if (val === undefined || val === null) return false;
+                return String(val).toLowerCase() === String(filter.value).toLowerCase();
+            });
+            // Also respect area filter
+            if (currentFilter) {
+                matching = matching.filter(function (m) { return m.feature.properties._sa2 === currentFilter; });
+            }
+        } else {
+            // No tree filter — respect area filter only
+            matching = currentFilter
+                ? allTreeMarkers.filter(function (m) { return m.feature.properties._sa2 === currentFilter; })
+                : allTreeMarkers;
+        }
+
+        matching.forEach(function (m) { plainTreeGroup.addLayer(m); });
+
+        // Make sure trees layer is on when filtering
+        if (filter && !treesOn) treesOn = true;
+        if (treesOn) plainTreeGroup.addTo(map);
+        layers.trees = plainTreeGroup;
+
+        // Update count
+        var countEl = document.querySelector('#panel-trees .layer-count');
+        if (countEl) countEl.textContent = matching.length.toLocaleString();
+
+        // Turn on trees checkbox if it was off
+        if (filter) {
+            var cb = document.querySelector('#panel-trees input[type=checkbox]');
+            if (cb && !cb.checked) cb.checked = true;
+        }
+    }
+
+    // ==================== UI FILTERS ====================
+
+    function applyUITreeFilter() {
+        var origin = document.getElementById('filter-tree-origin').value;
+        var endemic = document.getElementById('filter-tree-endemic').value;
+        var family = document.getElementById('filter-tree-family').value;
+        var species = document.getElementById('filter-tree-species').value;
+
+        var treesOn = map.hasLayer(activeTreeGroup);
+        if (treesOn) map.removeLayer(activeTreeGroup);
+        plainTreeGroup.clearLayers();
+
+        var matching = currentFilter
+            ? allTreeMarkers.filter(function (m) { return m.feature.properties._sa2 === currentFilter; })
+            : allTreeMarkers;
+
+        if (origin) matching = matching.filter(function (m) { return m.feature.properties.origin === origin; });
+        if (endemic) matching = matching.filter(function (m) { return m.feature.properties.endemic === endemic; });
+        if (family) matching = matching.filter(function (m) { return m.feature.properties.family === family; });
+        if (species) matching = matching.filter(function (m) { return m.feature.properties.common_name === species; });
+
+        matching.forEach(function (m) { plainTreeGroup.addLayer(m); });
+
+        // Auto-enable trees layer if a filter is active
+        var hasFilter = origin || endemic || family || species;
+        if (hasFilter && !treesOn) treesOn = true;
+        if (hasFilter) {
+            var cb = document.querySelector('#panel-trees input[type=checkbox]');
+            if (cb && !cb.checked) cb.checked = true;
+        }
+        if (treesOn) plainTreeGroup.addTo(map);
+        layers.trees = plainTreeGroup;
+
+        var countEl = document.querySelector('#panel-trees .layer-count');
+        if (countEl) countEl.textContent = matching.length.toLocaleString();
+    }
+
+    function resetTreeFilters() {
+        document.getElementById('filter-tree-origin').value = '';
+        document.getElementById('filter-tree-endemic').value = '';
+        document.getElementById('filter-tree-family').value = '';
+        document.getElementById('filter-tree-species').value = '';
+        applyUITreeFilter();
+    }
+
+    function applyBuildingFilter() {
+        var access = document.getElementById('filter-buildings-access').value;
+        var maxDist = parseInt(document.getElementById('filter-buildings-dist').value);
+        document.getElementById('filter-buildings-dist-val').textContent = maxDist + 'm';
+
+        var buildingsOn = map.hasLayer(layers.buildings);
+        if (buildingsOn) map.removeLayer(layers.buildings);
+
+        var baseData = filterSpatialData(json_building_nearest_parkbuilding_polygon_7);
+
+        // Apply filters
+        var filtered = {
+            type: 'FeatureCollection',
+            features: baseData.features.filter(function (f) {
+                var p = f.properties;
+                if (access && p.pass_fail_300 !== access) return false;
+                if (p.routing_distance_m > maxDist) return false;
+                return true;
+            })
+        };
+
+        layerBuildings = createBuildingsLayer(filtered);
+        layers.buildings = layerBuildings;
+        geoJsonLayers.buildings = layerBuildings;
+        if (buildingsOn) layerBuildings.addTo(map);
+
+        // Auto-enable if filter active
+        if ((access || maxDist < 1000) && !buildingsOn) {
+            layerBuildings.addTo(map);
+            var cb = document.querySelector('#panel-buildings input[type=checkbox]');
+            if (cb && !cb.checked) cb.checked = true;
+        }
+
+        var countEl = document.querySelector('#panel-buildings .layer-count');
+        if (countEl) countEl.textContent = filtered.features.length.toLocaleString();
+    }
+
+    // Populate tree filter dropdowns
+    (function populateTreeFilterDropdowns() {
+        var familySel = document.getElementById('filter-tree-family');
+        var speciesSel = document.getElementById('filter-tree-species');
+        if (!familySel || !speciesSel) return;
+
+        // Get all unique families sorted by frequency
+        var famFreq = {};
+        json_trees_species_dim_8.features.forEach(function (f) {
+            var v = f.properties.family;
+            if (v) famFreq[v] = (famFreq[v] || 0) + 1;
+        });
+        Object.keys(famFreq).sort(function (a, b) { return famFreq[b] - famFreq[a]; })
+            .forEach(function (fam) {
+                var opt = document.createElement('option');
+                opt.value = fam;
+                opt.textContent = fam + ' (' + famFreq[fam].toLocaleString() + ')';
+                familySel.appendChild(opt);
+            });
+
+        // Get all unique species sorted by frequency
+        var spFreq = {};
+        json_trees_species_dim_8.features.forEach(function (f) {
+            var v = f.properties.common_name;
+            if (v) spFreq[v] = (spFreq[v] || 0) + 1;
+        });
+        Object.keys(spFreq).sort(function (a, b) { return spFreq[b] - spFreq[a]; })
+            .forEach(function (sp) {
+                var opt = document.createElement('option');
+                opt.value = sp;
+                opt.textContent = sp + ' (' + spFreq[sp].toLocaleString() + ')';
+                speciesSel.appendChild(opt);
+            });
+    })();
+
+    function executeMapCommands(cmd) {
+        if (!cmd) return;
         try {
-            var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + geminiKey, {
+            // Toggle layers
+            if (cmd.layers) {
+                Object.keys(cmd.layers).forEach(function (name) {
+                    toggleLayer(name, cmd.layers[name]);
+                    // Sync checkbox
+                    var cb = document.querySelector('#panel-' + name + ' input[type=checkbox]');
+                    if (cb) cb.checked = cmd.layers[name];
+                });
+            }
+            // Change modes
+            if (cmd.mode) {
+                Object.keys(cmd.mode).forEach(function (layer) {
+                    var sel = document.getElementById('mode-' + layer);
+                    if (sel) {
+                        sel.value = cmd.mode[layer];
+                        updateStyle(layer, cmd.mode[layer]);
+                    }
+                });
+            }
+            // Area filter
+            if (cmd.area !== undefined) {
+                var sel = document.getElementById('area-filter');
+                if (sel) sel.value = cmd.area;
+                setAreaFilter(cmd.area);
+            }
+            // Tree filter
+            if (cmd.treeFilter !== undefined) {
+                applyTreeFilter(cmd.treeFilter);
+            }
+        } catch (e) {
+            console.error('Map command error:', e);
+        }
+    }
+
+    function parseCommands(text) {
+        var match = text.match(/```json\s*([\s\S]*?)\s*```/);
+        if (match) {
+            try { return JSON.parse(match[1]); } catch (e) { return null; }
+        }
+        return null;
+    }
+
+    function cleanResponse(text) {
+        // Remove the JSON block from the displayed text
+        return text.replace(/```json[\s\S]*?```/g, '').trim();
+    }
+
+    var aiMode = 'none'; // 'proxy' or 'none'
+    var activeProxy = '';
+
+    // Try local proxy first (dev), then production proxy
+    (function detectProxy() {
+        var urls = ['http://localhost:3001', AI_PROXY];
+        var idx = 0;
+        function tryNext() {
+            if (idx >= urls.length) return;
+            fetch(urls[idx] + '/health').then(function (r) {
+                if (r.ok) {
+                    aiMode = 'proxy';
+                    activeProxy = urls[idx];
+                    var btn = document.getElementById('ai-connect-btn');
+                    if (btn) { btn.classList.add('connected'); btn.textContent = 'DeepSeek AI active ✓'; }
+                } else { idx++; tryNext(); }
+            }).catch(function () { idx++; tryNext(); });
+        }
+        tryNext();
+    })();
+
+    async function askAI(question) {
+        if (aiMode === 'none' || !activeProxy) return null;
+        var localAnswer = smartAnswer(question);
+        var prompt = buildAIPrompt(question, localAnswer);
+        try {
+            var resp = await fetch(activeProxy + '/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { maxOutputTokens: 300 }
-                })
+                body: JSON.stringify({ system: prompt, question: question })
             });
             var data = await resp.json();
-            if (data.candidates && data.candidates[0]) {
-                return data.candidates[0].content.parts[0].text;
-            }
-            return null;
+            return data.answer || null;
         } catch (e) {
             return null;
         }
@@ -903,52 +1240,22 @@ var App = (function () {
         input.value = '';
         addMessage(question, 'user');
 
-        if (geminiKey) {
+        if (aiMode !== 'none') {
             addMessage('<em>Thinking...</em>', 'bot');
-            var aiAnswer = await askGemini(question);
+            var aiAnswer = await askAI(question);
             var msgs = document.getElementById('chat-messages');
             msgs.removeChild(msgs.lastChild);
             if (aiAnswer) {
-                addMessage(aiAnswer, 'bot');
+                var cmds = parseCommands(aiAnswer);
+                var display = cleanResponse(aiAnswer);
+                addMessage(display || 'Done!', 'bot');
+                if (cmds) executeMapCommands(cmds);
             } else {
                 addMessage(smartAnswer(question), 'bot');
             }
         } else {
             addMessage(smartAnswer(question), 'bot');
         }
-    }
-
-    function showAISettings() {
-        document.getElementById('ai-modal').style.display = 'flex';
-        var input = document.getElementById('gemini-key-input');
-        if (geminiKey) input.value = geminiKey;
-    }
-
-    function saveAIKey() {
-        var key = document.getElementById('gemini-key-input').value.trim();
-        var status = document.getElementById('ai-status');
-        if (!key) {
-            geminiKey = '';
-            localStorage.removeItem('gemini_api_key');
-            status.textContent = 'Key removed. Using smart engine.';
-            status.className = 'ai-status err';
-            document.getElementById('ai-connect-btn').classList.remove('connected');
-            document.getElementById('ai-connect-btn').textContent = 'Connect Gemini AI (optional)';
-            return;
-        }
-        geminiKey = key;
-        localStorage.setItem('gemini_api_key', key);
-        status.textContent = 'Key saved! Gemini AI is now active.';
-        status.className = 'ai-status ok';
-        document.getElementById('ai-connect-btn').classList.add('connected');
-        document.getElementById('ai-connect-btn').textContent = 'Gemini AI connected';
-        setTimeout(function () { document.getElementById('ai-modal').style.display = 'none'; }, 1200);
-    }
-
-    // Check if key already saved
-    if (geminiKey) {
-        var btn = document.getElementById('ai-connect-btn');
-        if (btn) { btn.classList.add('connected'); btn.textContent = 'Gemini AI connected'; }
     }
 
     // ==================== INIT ====================
@@ -1173,17 +1480,28 @@ var App = (function () {
         if (el) { el.classList.add('done'); setTimeout(function () { el.remove(); }, 600); }
     }, 500);
 
+    // Toggle collapsible filter sections
+    function toggleFilter(toggleEl) {
+        toggleEl.classList.toggle('collapsed');
+        var filterGroup = toggleEl.nextElementSibling;
+        if (filterGroup && filterGroup.classList.contains('filter-group')) {
+            filterGroup.classList.toggle('collapsed');
+        }
+    }
+
     // Public API
     return {
         updateStyle: updateStyle,
         toggleLayer: toggleLayer,
         toggleSidebar: toggleSidebar,
         togglePanel: togglePanel,
+        toggleFilter: toggleFilter,
         ask: ask,
-        showAISettings: showAISettings,
-        saveAIKey: saveAIKey,
         setAreaFilter: setAreaFilter,
         closeTreePanel: closeTreePanel,
+        applyUITreeFilter: applyUITreeFilter,
+        resetTreeFilters: resetTreeFilters,
+        applyBuildingFilter: applyBuildingFilter,
         map: map
     };
 
