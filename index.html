@@ -100,24 +100,46 @@
             </div>
         </div>
 
-        <!-- Building Park Access -->
-        <div class="layer-panel collapsed" id="panel-buildings">
-            <div class="layer-header" onclick="App.togglePanel('panel-buildings')">
-                <label class="toggle" onclick="event.stopPropagation()">
-                    <input type="checkbox" onchange="App.toggleLayer('buildings', this.checked)">
-                    <span class="toggle-slider"></span>
-                </label>
+        <!-- Park Access -->
+        <div class="layer-panel collapsed" id="panel-park-access">
+            <div class="layer-header" onclick="App.togglePanel('panel-park-access')">
                 <span class="layer-name">Park Access</span>
-                <span class="layer-count">15,225</span>
                 <span class="layer-chevron">&#9662;</span>
             </div>
             <div class="layer-body">
-                <select id="mode-buildings" onchange="App.updateStyle('buildings', this.value)">
-                    <option value="grade">Grade (-5 to +5)</option>
-                    <option value="passfail">Pass / Fail (300m)</option>
-                    <option value="distance">Distance (m)</option>
-                </select>
+
+                <!-- Analysis per Neighborhood -->
+                <div class="sub-layer-label">Analysis per Neighborhood</div>
+                <div class="sub-layer-row">
+                    <label class="toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" onchange="App.toggleParkAccess('park-sa2', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <select id="mode-park-sa2" onchange="App.updateStyle('park-sa2', this.value)">
+                        <option value="grade">Grade (-5 to +5)</option>
+                        <option value="passfail">Pass / Fail (300m)</option>
+                    </select>
+                </div>
+                <div id="legend-park-sa2" class="legend"></div>
+                <span class="layer-count">18</span>
+
+                <div class="sub-layer-divider"></div>
+
+                <!-- Analysis per Building -->
+                <div class="sub-layer-label">Analysis per Building</div>
+                <div class="sub-layer-row">
+                    <label class="toggle" onclick="event.stopPropagation()">
+                        <input type="checkbox" onchange="App.toggleParkAccess('buildings', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <select id="mode-buildings" onchange="App.updateStyle('buildings', this.value)">
+                        <option value="grade">Grade (-5 to +5)</option>
+                        <option value="passfail">Pass / Fail (300m)</option>
+                        <option value="distance">Distance (m)</option>
+                    </select>
+                </div>
                 <div id="legend-buildings" class="legend"></div>
+                <span class="layer-count">15,225</span>
                 <div class="filter-toggle collapsed" onclick="App.toggleFilter(this)">
                     <span class="filter-chevron">&#9662;</span> Filters
                 </div>
@@ -134,6 +156,7 @@
                         <span id="filter-buildings-dist-val">1000m</span>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -210,6 +233,17 @@
             </div>
         </div>
 
+        <!-- Neighborhood Names -->
+        <div class="layer-panel" id="panel-sa2-names">
+            <div class="layer-header">
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" onchange="App.toggleLayer('sa2-names', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="layer-name">Neighborhood Names</span>
+            </div>
+        </div>
+
         <!-- Municipal Boundary -->
         <div class="layer-panel" id="panel-municipal">
             <div class="layer-header">
@@ -260,6 +294,7 @@
 <script src="data/sa2_canopy_coverage_4.js"></script>
 <script src="data/sa2_tree_diversity_5.js"></script>
 <script src="data/sa2_tree_origin_6.js"></script>
+<script src="data/sa2_park_access_1.js"></script>
 <script src="data/building_nearest_parkbuilding_polygon_7.js"></script>
 <script src="data/trees_species_dim_8.js"></script>
 

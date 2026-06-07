@@ -111,7 +111,7 @@ var App = (function () {
     }).addTo(map);
 
     // Panes (z-order)
-    ['municipal', 'parks', 'sa2', 'canopy', 'diversity', 'origin-sa2', 'buildings', 'trees'].forEach(function (name, i) {
+    ['municipal', 'parks', 'sa2', 'canopy', 'diversity', 'origin-sa2', 'park-sa2', 'buildings', 'trees', 'sa2-names'].forEach(function (name, i) {
         map.createPane('pane-' + name);
         map.getPane('pane-' + name).style.zIndex = 401 + i;
     });
@@ -285,6 +285,23 @@ var App = (function () {
         return { pane: 'pane-buildings', fillColor: fill, fillOpacity: 0.8, color: '#555', weight: 0.3, opacity: 0.4 };
     }
 
+    function styleParkSA2(feature, mode) {
+        var p = feature.properties, fill;
+        if (mode === 'grade') fill = gradeColor(num(p.neighborhood_park_grade));
+        else if (mode === 'passfail') fill = PASSFAIL_COLORS[p.pass_fail_300] || '#999';
+        else fill = '#999';
+        return { pane: 'pane-park-sa2', fillColor: fill, fillOpacity: 0.75, color: '#444', weight: 1.2, opacity: 0.7 };
+    }
+
+    function popupParkSA2(p) {
+        return '<div class="popup-content">' +
+            '<div class="popup-title">' + p.sa2_name21 + '</div>' +
+            row('Avg Distance', Math.round(num(p.avg_distance_m)) + ' m') +
+            row('Grade', p.neighborhood_park_grade) +
+            row('300m Target', badge(p.pass_fail_300)) +
+            '</div>';
+    }
+
     function styleTree(feature, mode) {
         var p = feature.properties, fill;
         if (mode === 'origin') fill = ORIGIN_COLORS[p.origin] || '#888';
@@ -321,6 +338,10 @@ var App = (function () {
             if (mode === 'exotic_pct') return pct(p.exotic_percent);
             if (mode === 'introduced_pct') return pct(p.introduced_percent);
             return String(p.endemic_count);
+        }
+        if (layerName === 'park-sa2') {
+            if (mode === 'grade') return String(p.neighborhood_park_grade);
+            if (mode === 'passfail') return p.pass_fail_300;
         }
         return '';
     }
@@ -364,6 +385,52 @@ var App = (function () {
         interactive: false
     }).addTo(map);
 
+    // Neighborhood name labels — one entry per SA2, manually adjustable
+    // Each entry: [latitude, longitude] for the label position
+    // File: js/app.js — search "SA2_LABEL_POSITIONS" to find this block
+    // Position [lat, lng] and display label for each SA2 neighborhood
+    // To break a label into 2 lines, add <br> in the 'label' field
+    // File: js/app.js  —  search "SA2_LABELS" to find this block
+    var SA2_LABELS = {
+        'Melbourne CBD - North':          { pos: [-37.8075, 144.9560], label: 'Melbourne CBD<br>North' },
+        'Melbourne CBD - East':           { pos: [-37.8145, 144.9650], label: 'Melbourne<br>CBD East' },
+        'Melbourne CBD - West':           { pos: [-37.8185, 144.9560], label: 'Melbourne<br>CBD West' },
+        'Carlton':                        { pos: [-37.7969, 144.9680], label: 'Carlton' },
+        'Carlton North - Princes Hill':   { pos: [-37.7890, 144.9600], label: 'Carlton North<br>Princes Hill' },
+        'Parkville':                      { pos: [-37.7830, 144.9480], label: 'Parkville' },
+        'North Melbourne':                { pos: [-37.7935, 144.9400], label: 'North<br>Melbourne' },
+        'West Melbourne - Residential':   { pos: [-37.8065, 144.9440], label: 'West Melbourne<br>Residential' },
+        'West Melbourne - Industrial':    { pos: [-37.8119, 144.9180], label: 'West Melbourne<br>Industrial' },
+        'Kensington (Vic.)':              { pos: [-37.7900, 144.9260], label: 'Kensington' },
+        'Flemington Racecourse':          { pos: [-37.7890, 144.9090], label: 'Flemington<br>Racecourse' },
+        'Docklands':                      { pos: [-37.8190, 144.9385], label: 'Docklands' },
+        'East Melbourne':                 { pos: [-37.8120, 144.9745], label: 'East Melbourne' },
+        'Southbank (West) - South Wharf': { pos: [-37.8250, 144.9530], label: 'Southbank West<br>South Wharf' },
+        'Southbank - East':               { pos: [-37.8228, 144.9650], label: 'Southbank<br>East' },
+        'South Yarra - West':             { pos: [-37.8350, 144.9770], label: 'South Yarra <br>West' },
+        'Royal Botanic Gardens Victoria': { pos: [-37.8295, 144.9760], label: 'Royal<br>Botanic<br>Gardens' },
+        'Port Melbourne Industrial':      { pos: [-37.8219, 144.9170], label: 'Port Melbourne<br>Industrial' }
+    };
+
+    var layerSA2Names = L.featureGroup({ pane: 'pane-sa2-names' });
+    json_SA2_Melbourne_boundaries_2.features.forEach(function (f) {
+        var name = f.properties.sa2_name21;
+        var cfg = SA2_LABELS[name];
+        if (!cfg) return;
+
+        var marker = L.marker(cfg.pos, {
+            pane: 'pane-sa2-names',
+            icon: L.divIcon({
+                className: 'sa2-name-label',
+                html: '<span>' + cfg.label + '</span>',
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            }),
+            interactive: false
+        });
+        layerSA2Names.addLayer(marker);
+    });
+
     var layerParks = L.geoJson(json_PPRZ_Parks_more_than_05h_3, {
         pane: 'pane-parks',
         style: { color: '#2d6a2d', weight: 0.5, fillColor: '#b2df8a', fillOpacity: 0.45 },
@@ -377,6 +444,8 @@ var App = (function () {
     var layerDiversity = makeAnalysisLayer(json_sa2_tree_diversity_5, 'pane-diversity', styleDiv, popupDiversity, 'diversity', 'species_grade');
 
     var layerOriginSA2 = makeAnalysisLayer(json_sa2_tree_origin_6, 'pane-origin-sa2', styleOriginSA2, popupOriginSA2, 'origin-sa2', 'native_pct');
+
+    var layerParkSA2 = makeAnalysisLayer(json_sa2_park_access_1, 'pane-park-sa2', styleParkSA2, popupParkSA2, 'park-sa2', 'grade');
 
     var layerBuildings = L.geoJson(json_building_nearest_parkbuilding_polygon_7, {
         pane: 'pane-buildings',
@@ -423,10 +492,12 @@ var App = (function () {
         'canopy': layerCanopy,
         'diversity': layerDiversity,
         'origin-sa2': layerOriginSA2,
+        'park-sa2': layerParkSA2,
         'buildings': layerBuildings,
         'trees': activeTreeGroup,
         'parks': layerParks,
         'sa2': layerSA2,
+        'sa2-names': layerSA2Names,
         'municipal': layerMunicipal
     };
 
@@ -434,6 +505,7 @@ var App = (function () {
         'canopy': styleCanopy,
         'diversity': styleDiv,
         'origin-sa2': styleOriginSA2,
+        'park-sa2': styleParkSA2,
         'buildings': styleBuilding
     };
 
@@ -441,6 +513,7 @@ var App = (function () {
         'canopy': layerCanopy,
         'diversity': layerDiversity,
         'origin-sa2': layerOriginSA2,
+        'park-sa2': layerParkSA2,
         'buildings': layerBuildings
     };
 
@@ -588,6 +661,10 @@ var App = (function () {
             else if (mode === 'exotic_pct') renderGradientLegend(el, '0%', '80%', SEQ_RED);
             else if (mode === 'introduced_pct') renderGradientLegend(el, '0%', '50%', SEQ_BLUE);
             else renderGradientLegend(el, '0', '50', SEQ_GOLD);
+        }
+        else if (layerName === 'park-sa2') {
+            if (mode === 'grade') renderGradeLegend(el, ACCESS_GRADE_DESC, true);
+            else if (mode === 'passfail') renderPassFailLegend(el, ['Pass', 'Fail'], ['≤ 300m to park', '> 300m to park']);
         }
         else if (layerName === 'buildings') {
             if (mode === 'grade') renderGradeLegend(el, ACCESS_GRADE_DESC, true);
@@ -1263,6 +1340,7 @@ var App = (function () {
     updateLegend('canopy', 'grade');
     updateLegend('diversity', 'species_grade');
     updateLegend('origin-sa2', 'native_pct');
+    updateLegend('park-sa2', 'grade');
     updateLegend('buildings', 'grade');
     updateLegend('trees', 'origin');
 
@@ -1489,6 +1567,26 @@ var App = (function () {
         }
     }
 
+    // Mutual exclusivity for park access layers
+    function toggleParkAccess(name, on) {
+        var other = (name === 'park-sa2') ? 'buildings' : 'park-sa2';
+        if (on) {
+            // Turn off the other layer
+            toggleLayer(other, false);
+            // Uncheck the other toggle
+            var otherPanel = document.getElementById('panel-park-access');
+            if (otherPanel) {
+                var toggles = otherPanel.querySelectorAll('input[type="checkbox"]');
+                toggles.forEach(function (cb) {
+                    // Find the one whose onchange references the other layer
+                    var handler = cb.getAttribute('onchange') || '';
+                    if (handler.indexOf(other) >= 0) cb.checked = false;
+                });
+            }
+        }
+        toggleLayer(name, on);
+    }
+
     // Public API
     return {
         updateStyle: updateStyle,
@@ -1496,6 +1594,7 @@ var App = (function () {
         toggleSidebar: toggleSidebar,
         togglePanel: togglePanel,
         toggleFilter: toggleFilter,
+        toggleParkAccess: toggleParkAccess,
         ask: ask,
         setAreaFilter: setAreaFilter,
         closeTreePanel: closeTreePanel,
