@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/leaflet.css">
     <link rel="stylesheet" href="css/L.Control.Locate.min.css">
     <link rel="stylesheet" href="css/fontawesome-all.min.css">
-    <link rel="stylesheet" href="css/app.css?v=6">
+    <link rel="stylesheet" href="css/app.css?v=25">
 </head>
 <body>
 
@@ -20,7 +20,11 @@
 <div id="sidebar">
     <div class="sidebar-header">
         <h1>Melbourne Urban Forest</h1>
-        <p>Neighborhood Analysis Dashboard</p>
+        <p>Green Infrastructure Analysis Dashboard</p>
+        <button class="header-info-btn" onclick="HelpModal.openInfo()">
+            <span>&#128161; The idea behind it &amp; benchmark references</span>
+            <span class="header-info-arrow">&rarr;</span>
+        </button>
     </div>
     <div class="sidebar-content">
 
@@ -259,21 +263,21 @@
         <div id="chat-panel">
             <div id="chat-messages">
                 <div class="chat-msg bot">
-                    <p>Ask questions or control the map! Try:</p>
+                    <p>Ask questions about the data, or tell the map what to show. Try:</p>
                     <ul>
+                        <li>"Which SA2 has the highest canopy?"</li>
+                        <li>"How many native trees in Carlton?"</li>
                         <li>"Show only native trees"</li>
                         <li>"Filter to Carlton and show canopy"</li>
-                        <li>"Which SA2 has the highest canopy?"</li>
                         <li>"Reset the map"</li>
                     </ul>
-                    <p style="font-size:11px;opacity:0.7;margin-top:6px;">Connect DeepSeek AI for map filtering</p>
+                    <p style="font-size:11px;opacity:0.7;margin-top:6px;">Answers come straight from the dashboard's data.</p>
                 </div>
             </div>
             <div id="chat-input-row">
                 <input type="text" id="chat-input" placeholder="Ask a question..." onkeydown="if(event.key==='Enter')App.ask()">
                 <button id="chat-send" onclick="App.ask()">&#10148;</button>
             </div>
-            <div id="ai-connect-btn" class="ai-status-label">Checking AI...</div>
         </div>
 
     </div>
@@ -323,89 +327,137 @@
         <div class="help-cap-list">
           <div class="help-cap-item"><span class="help-c-icon">&#127960;&#65039;</span><span class="help-c-text"><b>Compare neighbourhoods</b> across canopy coverage, park access, tree diversity, and ecological origin.</span></div>
           <div class="help-cap-item"><span class="help-c-icon">&#128205;</span><span class="help-c-text"><b>Explore individual trees</b>: click any of the 82,064 trees for its species, size, and live photo.</span></div>
-          <div class="help-cap-item"><span class="help-c-icon">&#128172;</span><span class="help-c-text"><b>Ask the data</b>: a built-in tool answers specific questions straight from the dataset.</span></div>
-          <div class="help-cap-item"><span class="help-c-icon">&#129517;</span><span class="help-c-text"><b>Add context layers</b>: parks, boundaries, neighbourhood names, plus search and measure tools.</span></div>
+          <div class="help-cap-item"><span class="help-c-icon">&#128172;</span><span class="help-c-text"><b>Ask the data</b>: a built-in tool answers questions and controls the map for you.</span></div>
         </div>
-        <button class="help-branch-btn" onclick="HelpModal.openBranch()"><span>&#128161; The idea behind it &amp; benchmark references</span><span class="help-arrow">&rarr;</span></button>
       </div>
 
       <div class="help-step" data-step="1">
         <h2><span class="help-icon">&#127960;&#65039;</span> Neighbourhood analysis</h2>
-        <p>Toggle any of the four neighbourhood metrics on the left to colour the map by that measure.</p>
-        <div class="help-mock">
-          <div class="help-mock-toggle on highlight"><span class="help-mock-label"><span class="help-sw"></span> Canopy Coverage</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
-          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Tree Diversity</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
-          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Tree Origin (SA2)</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
-          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Park Access</span><span class="help-mock-right"><span class="help-mock-count">15,225</span><span class="help-chev-r">&#9656;</span></span></div>
+        <div class="help-cols">
+          <div>
+            <div class="help-col-caption">Toggle any of the four neighbourhood metrics on the left to colour the map by that measure.</div>
+            <div class="help-mock">
+              <div class="help-mock-section-title">Neighborhood Analysis</div>
+              <div class="help-mock-toggle on highlight"><span class="help-mock-label"><span class="help-sw"></span> Canopy Coverage</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
+              <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Tree Diversity</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
+              <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Tree Origin (SA2)</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
+              <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Park Access</span><span class="help-mock-right"><span class="help-mock-count">15,225</span><span class="help-chev-r">&#9656;</span></span></div>
+            </div>
+          </div>
+          <div>
+            <div class="help-col-caption">Each metric has a benchmark drawn from international greening standards. Toggle between a simple Pass / Fail view, or a graded system from &minus;5 to +5, anchored at the benchmark (0).</div>
+            <div class="help-grade-block">
+              <div class="help-grade-labels"><span>Worst</span><span>Benchmark (0)</span><span>Best</span></div>
+              <div class="help-grade-legend">
+                <div class="help-grade-cell" style="background:#a50026">&minus;5</div>
+                <div class="help-grade-cell" style="background:#d73027">&minus;4</div>
+                <div class="help-grade-cell" style="background:#f46d43">&minus;3</div>
+                <div class="help-grade-cell" style="background:#fdae61">&minus;2</div>
+                <div class="help-grade-cell" style="background:#fee08b;color:#7a5c00">&minus;1</div>
+                <div class="help-grade-cell" style="background:#ffffbf;color:#7a5c00">0</div>
+                <div class="help-grade-cell" style="background:#d9ef8b;color:#3a5c00">1</div>
+                <div class="help-grade-cell" style="background:#a6d96a;color:#2a4c00">2</div>
+                <div class="help-grade-cell" style="background:#66bd63">3</div>
+                <div class="help-grade-cell" style="background:#1a9850">4</div>
+                <div class="help-grade-cell" style="background:#006837">5</div>
+              </div>
+            </div>
+            <div class="help-map-thumb" id="helpThumbGrade"></div>
+            <div class="help-thumb-cap">Each neighbourhood is coloured by its grade.</div>
+          </div>
         </div>
-        <p>Each metric has a benchmark drawn from international greening standards. Toggle between a simple Pass / Fail view, or a graded system from &minus;5 to +5, anchored at the benchmark (0).</p>
-        <div class="help-grade-labels"><span>Worst</span><span>Benchmark (0)</span><span>Best</span></div>
-        <div class="help-grade-legend">
-          <div class="help-grade-cell" style="background:#a50026">&minus;5</div>
-          <div class="help-grade-cell" style="background:#d73027">&minus;4</div>
-          <div class="help-grade-cell" style="background:#f46d43">&minus;3</div>
-          <div class="help-grade-cell" style="background:#fdae61">&minus;2</div>
-          <div class="help-grade-cell" style="background:#fee08b;color:#7a5c00">&minus;1</div>
-          <div class="help-grade-cell" style="background:#ffffbf;color:#7a5c00">0</div>
-          <div class="help-grade-cell" style="background:#d9ef8b;color:#3a5c00">1</div>
-          <div class="help-grade-cell" style="background:#a6d96a;color:#2a4c00">2</div>
-          <div class="help-grade-cell" style="background:#66bd63">3</div>
-          <div class="help-grade-cell" style="background:#1a9850">4</div>
-          <div class="help-grade-cell" style="background:#006837">5</div>
-        </div>
-        <p style="font-size:13px; margin-top:14px;">Use the dropdown to switch views. <strong>Tree Diversity</strong> can be seen by species, genus, or family, and <strong>Park Access</strong> per building or per neighbourhood.</p>
+        <p style="font-size:13px;">Use the dropdown to switch views. <strong>Tree Diversity</strong> can be seen by species, genus, or family, and <strong>Park Access</strong> per building or per neighbourhood.</p>
       </div>
 
       <div class="help-step" data-step="2">
         <h2><span class="help-icon">&#128205;</span> Individual trees</h2>
-        <p>Turn on the <strong>Trees</strong> layer to see all 82,064 trees as points on the map, coloured by ecological origin.</p>
-        <div class="help-origin-chips">
-          <div class="help-origin-chip" style="background:#1a9850">Native</div>
-          <div class="help-origin-chip" style="background:#fdae61">Introduced</div>
-          <div class="help-origin-chip" style="background:#a50026">Exotic</div>
-        </div>
-        <p style="font-size:13px;">A dropdown lets you colour trees by origin, family, genus, or species, and the <strong>filters</strong> narrow the view by origin, family, or species. Click any tree to open a panel with its details, a live photo, and an ecology summary pulled from Wikipedia and iNaturalist:</p>
-        <div class="help-tree-panel-mock">
-          <div class="help-tree-photo">&#127807;</div>
-          <div class="help-tree-info">
-            <h4>Lightwood Wattle</h4>
-            <div class="help-tree-sci">Acacia implexa</div>
-            <span class="help-tree-badge">Native to Victoria</span>
-            <div class="help-tree-rows">
-              <div class="help-tree-drow"><span>Family</span><b>Fabaceae</b></div>
-              <div class="help-tree-drow"><span>Planted</span><b>2019</b></div>
-              <div class="help-tree-drow"><span>Located in</span><b>Park</b></div>
+        <div class="help-cols">
+          <div>
+            <div class="help-col-caption">Turn on the <strong>Trees</strong> layer to see all 82,064 trees as points on the map, coloured by ecological origin.</div>
+            <div class="help-origin-chips">
+              <div class="help-origin-chip" style="background:#1a9850">Native</div>
+              <div class="help-origin-chip" style="background:#fdae61">Introduced</div>
+              <div class="help-origin-chip" style="background:#a50026">Exotic</div>
             </div>
-            <div class="help-tree-links"><span>&#8599; Wikipedia</span><span>&#8599; iNaturalist</span></div>
+            <div class="help-col-caption">A dropdown lets you colour trees by origin, family, genus, or species, and the <strong>filters</strong> narrow the view by origin, family, or species.</div>
+            <div class="help-map-thumb" id="helpThumbTrees"></div>
+            <div class="help-thumb-cap">Every tree is a point on the map.</div>
+          </div>
+          <div>
+            <div class="help-col-caption">Click any tree to open a panel with its details, a live photo, and an ecology summary pulled from Wikipedia and iNaturalist:</div>
+            <div class="help-tree-panel-mock">
+              <div class="help-tree-photo">&#127807;</div>
+              <div class="help-tree-info">
+                <h4>Lightwood Wattle</h4>
+                <div class="help-tree-sci">Acacia implexa</div>
+                <span class="help-tree-badge">Native to Victoria</span>
+                <div class="help-tree-rows">
+                  <div class="help-tree-drow"><span>Family</span><b>Fabaceae</b></div>
+                  <div class="help-tree-drow"><span>Planted</span><b>2019</b></div>
+                  <div class="help-tree-drow"><span>Located in</span><b>Park</b></div>
+                </div>
+                <div class="help-tree-links"><span>&#8599; Wikipedia</span><span>&#8599; iNaturalist</span></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="help-step" data-step="3">
         <h2><span class="help-icon">&#128172;</span> Ask the data</h2>
-        <p>The <strong>Ask the Data</strong> tool retrieves answers directly from the dashboard's database. It's not a general AI chatbot. It looks things up in the dataset, so it works best with <strong>specific, data-shaped questions</strong>.</p>
-        <div class="help-chat-mock">
-          <div class="help-chat-q">which species are the most common in Carlton?</div>
-          <div class="help-chat-a">
-            <div class="help-chat-head">Top species in <span class="help-accent">Carlton</span>:</div>
-            <div class="help-chat-row">1. <b>London Plane</b>: 645 trees</div>
-            <div class="help-chat-row">2. <b>English Elm</b>: 296 trees</div>
-            <div class="help-chat-row">3. <b>European nettle tree</b>: 182 trees</div>
+        <div class="help-cols">
+          <div>
+            <div class="help-col-caption">The <strong>Ask the Data</strong> tool retrieves answers directly from the dashboard's database. It can do two things: <strong>answer questions</strong> about the data, and <strong>control the map</strong> for you.</div>
+            <div class="help-chat-note"><b>Tip:</b> to <b>ask</b>, name a neighbourhood and what you want to know: species counts, canopy rankings, origin breakdowns. To <b>control the map</b>, start with "show", "filter to", "hide" or "reset". Open-ended or opinion questions won't return results.</div>
+          </div>
+          <div>
+            <div class="help-chat-mock">
+              <div class="help-mock-section-title">Ask the Data</div>
+              <div class="help-chat-q">which species are the most common in Carlton?</div>
+              <div class="help-chat-a">
+                <div class="help-chat-head">Top species in <span class="help-accent">Carlton</span>:</div>
+                <div class="help-chat-row">1. <b>London Plane</b>: 645 trees</div>
+                <div class="help-chat-row">2. <b>English Elm</b>: 296 trees</div>
+                <div class="help-chat-row">3. <b>European nettle tree</b>: 182 trees</div>
+              </div>
+              <div class="help-chat-q">filter to Carlton and show only London Plane trees</div>
+              <div class="help-chat-a">
+                <div class="help-chat-row">Done &mdash; zoomed to <span class="help-accent">Carlton</span> and showing only <b>London Plane</b> trees.</div>
+              </div>
+              <div class="help-chat-input-row">
+                <span class="help-chat-input">Ask a question&hellip;</span>
+                <span class="help-chat-send">&#10148;</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="help-chat-note"><b>Tip:</b> name a neighbourhood and what you want to know: species counts, canopy rankings, origin breakdowns. Open-ended or opinion questions won't return results.</div>
       </div>
 
       <div class="help-step" data-step="4">
         <h2><span class="help-icon">&#129517;</span> Reference layers &amp; tools</h2>
-        <p>Add context to the map with independent layers you can toggle on or off:</p>
-        <div class="help-mock">
-          <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> Parks (&ge;0.5ha)</span></div>
-          <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> SA2 Boundaries</span></div>
-          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Neighborhood Names</span></div>
-          <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> Municipal Boundary</span></div>
+        <div class="help-side-by-side">
+          <div class="help-col-caption">Use the <strong>Reference Layers</strong> near the bottom of the side panel to toggle context layers on and off.</div>
+          <div class="help-col-caption">Use the <strong>Focus Area</strong> dropdown at the top to zoom and show analysis for a single neighbourhood. Set it back to <strong>All Melbourne</strong> for the whole city again.</div>
+          <div class="help-mock">
+            <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> Parks (&ge;0.5ha)</span></div>
+            <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> SA2 Boundaries</span></div>
+            <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Neighborhood Names</span></div>
+            <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> Municipal Boundary</span></div>
+          </div>
+          <div class="help-focus-mock">
+            <div class="help-focus-label">Focus Area</div>
+            <div class="help-focus-select">All Melbourne <span class="help-focus-chev">&#9662;</span></div>
+            <div class="help-focus-list">
+              <div class="help-focus-opt active">Carlton</div>
+              <div class="help-focus-opt">Docklands</div>
+              <div class="help-focus-opt">East Melbourne</div>
+              <div class="help-focus-opt">Parkville</div>
+              <div class="help-focus-opt dim">&hellip;and 14 more</div>
+            </div>
+          </div>
         </div>
-        <p style="font-size:13px;">Use the <strong>Focus Area</strong> dropdown at the top to zoom to a single neighbourhood, or the <strong>search</strong> and <strong>measure</strong> tools to explore addresses and distances. That's it. Enjoy exploring Melbourne's urban forest!</p>
+        <p style="font-size:13px;">Use the <span class="help-pin"><span class="fa fa-map-marker"></span></span> pinpoint icon to find your location.</p>
+        <p class="help-closing">That's it. Enjoy exploring Melbourne's urban forest!</p>
       </div>
 
       <div class="help-step" data-step="branch">
@@ -440,7 +492,7 @@
     </div>
 
     <div class="help-branch-footer" id="helpBranchFooter" style="display:none;">
-      <button class="help-btn help-btn-ghost" onclick="HelpModal.closeBranch()">&larr; Back</button>
+      <button class="help-btn help-btn-primary" onclick="HelpModal.close()">Close</button>
     </div>
   </div>
 </div>
@@ -470,7 +522,23 @@ var HelpModal = (function () {
     function prev() { if (current > 0) { current--; render(); } }
     function go(i) { current = i; render(); }
 
-    function openBranch() {
+    // The tour (linear steps) and the info card are two separate views of the
+    // same modal, so each entry point restores its own chrome.
+    var thumbsBuilt = false;
+    function open() {
+        if (!thumbsBuilt) { try { buildThumbs(); } catch (e) {} thumbsBuilt = true; }
+        current = 0;
+        document.getElementById('helpLinearFooter').style.display = 'flex';
+        document.getElementById('helpBranchFooter').style.display = 'none';
+        document.getElementById('helpModalTitle').textContent = 'Melbourne Urban Forest Dashboard';
+        document.getElementById('helpModalSubtitle').textContent = 'Visualisation of tree quantity and quality';
+        render();
+        document.querySelector('.help-modal-body').scrollTop = 0;
+        document.getElementById('helpBackdrop').style.display = 'flex';
+    }
+
+    // Opened from the permanent button in the sidebar header
+    function openInfo() {
         document.querySelectorAll('.help-step').forEach(function (s) {
             s.classList.toggle('active', s.dataset.step === 'branch');
         });
@@ -479,19 +547,6 @@ var HelpModal = (function () {
         document.getElementById('helpModalTitle').textContent = 'The idea & references';
         document.getElementById('helpModalSubtitle').textContent = 'Why this dashboard exists';
         document.querySelector('.help-modal-body').scrollTop = 0;
-    }
-    function closeBranch() {
-        document.getElementById('helpLinearFooter').style.display = 'flex';
-        document.getElementById('helpBranchFooter').style.display = 'none';
-        document.getElementById('helpModalTitle').textContent = 'Melbourne Urban Forest Dashboard';
-        document.getElementById('helpModalSubtitle').textContent = 'Visualisation of tree quantity and quality';
-        render();
-        document.querySelector('.help-modal-body').scrollTop = 0;
-    }
-
-    function open() {
-        current = 0;
-        render();
         document.getElementById('helpBackdrop').style.display = 'flex';
     }
     function close() {
@@ -500,6 +555,85 @@ var HelpModal = (function () {
             try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
         }
         document.getElementById('helpBackdrop').style.display = 'none';
+    }
+
+    // Map thumbnails, drawn from the same GeoJSON the map uses so they always
+    // match the real data. Simplified heavily — they are ~280px wide.
+    function buildThumbs() {
+        var gradeEl = document.getElementById('helpThumbGrade');
+        var treesEl = document.getElementById('helpThumbTrees');
+        if (!gradeEl || !treesEl) return;
+        if (typeof json_SA2_Melbourne_boundaries_2 === 'undefined') return;
+
+        var GRADE = { '-5':'#a50026','-4':'#d73027','-3':'#f46d43','-2':'#fdae61','-1':'#fee08b',
+                      '0':'#ffffbf','1':'#d9ef8b','2':'#a6d96a','3':'#66bd63','4':'#1a9850','5':'#006837' };
+        var ORIGIN = { 'Native':'#1a9850', 'Introduced':'#fdae61', 'Exotic':'#a50026' };
+        var W = 280, H = 130, PAD = 3;
+
+        function rings(geom) {
+            var polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+            return polys.map(function (p) { return p[0]; });
+        }
+
+        // Projection fitted to the SA2 extent
+        var minLng = 1e9, maxLng = -1e9, minLat = 1e9, maxLat = -1e9;
+        json_SA2_Melbourne_boundaries_2.features.forEach(function (f) {
+            rings(f.geometry).forEach(function (r) {
+                r.forEach(function (c) {
+                    if (c[0] < minLng) minLng = c[0];
+                    if (c[0] > maxLng) maxLng = c[0];
+                    if (c[1] < minLat) minLat = c[1];
+                    if (c[1] > maxLat) maxLat = c[1];
+                });
+            });
+        });
+        var s = Math.min((W - 2*PAD) / (maxLng - minLng), (H - 2*PAD) / (maxLat - minLat));
+        var offX = PAD + ((W - 2*PAD) - (maxLng - minLng) * s) / 2;
+        var offY = PAD + ((H - 2*PAD) - (maxLat - minLat) * s) / 2;
+        function X(lng) { return +(offX + (lng - minLng) * s).toFixed(1); }
+        function Y(lat) { return +(offY + (maxLat - lat) * s).toFixed(1); }
+
+        function pathFor(geom) {
+            var d = '';
+            rings(geom).forEach(function (r) {
+                var step = Math.max(1, Math.round(r.length / 40));
+                var n = 0;
+                for (var i = 0; i < r.length; i += step) {
+                    d += (n === 0 ? 'M' : 'L') + X(r[i][0]) + ' ' + Y(r[i][1]);
+                    n++;
+                }
+                if (n > 2) d += 'Z';
+            });
+            return d;
+        }
+
+        var open = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+
+        // Neighbourhoods coloured by canopy grade
+        var svg = open;
+        json_sa2_canopy_coverage_4.features.forEach(function (f) {
+            var g = Math.round(Math.max(-5, Math.min(5, Number(f.properties.canopy_grade_5) || 0)));
+            svg += '<path d="' + pathFor(f.geometry) + '" fill="' + (GRADE[String(g)] || '#999') +
+                   '" stroke="#fff" stroke-width="0.5"/>';
+        });
+        gradeEl.innerHTML = svg + '</svg>';
+
+        // Trees as points, coloured by origin (sampled — this is a thumbnail)
+        var outline = '';
+        json_SA2_Melbourne_boundaries_2.features.forEach(function (f) {
+            outline += '<path d="' + pathFor(f.geometry) + '" fill="#e8eef2" stroke="#cdd8e0" stroke-width="0.5"/>';
+        });
+        var dots = '';
+        var feats = json_trees_species_dim_8.features;
+        var stride = Math.max(1, Math.round(feats.length / 900));
+        for (var i = 0; i < feats.length; i += stride) {
+            var p = feats[i];
+            var c = p.geometry && p.geometry.coordinates;
+            if (!c) continue;
+            dots += '<circle cx="' + X(c[0]) + '" cy="' + Y(c[1]) + '" r="0.7" fill="' +
+                    (ORIGIN[p.properties.origin] || '#888') + '"/>';
+        }
+        treesEl.innerHTML = open + outline + dots + '</svg>';
     }
 
     // Show on load unless user opted out
@@ -516,11 +650,11 @@ var HelpModal = (function () {
         if (e.target === this) close();
     });
 
-    return { open: open, close: close, next: next, prev: prev, go: go, openBranch: openBranch, closeBranch: closeBranch };
+    return { open: open, close: close, next: next, prev: prev, go: go, openInfo: openInfo };
 })();
 </script>
 
 <!-- App -->
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>

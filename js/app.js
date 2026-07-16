@@ -177,6 +177,14 @@ var App = (function () {
     var topGenera = topValues(json_trees_species_dim_8, 'genus', 8);
     var topSpecies = topValues(json_trees_species_dim_8, 'common_name', 10);
 
+    // Full lists for text matching in chat commands, longest first so that
+    // e.g. "River Red Gum" wins over a shorter name contained within it.
+    // Placeholders like "-" and "N/A" are dropped: they would match almost any sentence.
+    function byLengthDesc(a, b) { return b.length - a.length; }
+    function isRealName(v) { return /[a-z]{3}/i.test(v); }
+    var allFamilies = topValues(json_trees_species_dim_8, 'family', 9999).filter(isRealName).sort(byLengthDesc);
+    var allSpecies = topValues(json_trees_species_dim_8, 'common_name', 9999).filter(isRealName).sort(byLengthDesc);
+
     // ==================== POPUP BUILDERS ====================
 
     function badge(val) {
@@ -814,6 +822,8 @@ var App = (function () {
     var buildings = json_building_nearest_parkbuilding_polygon_7.features;
 
     var sa2Names = sa2Canopy.map(function (f) { return f.properties.sa2_name21; });
+    // Longest first, so "Carlton North - Princes Hill" is not shadowed by "Carlton"
+    var sa2NamesByLength = sa2Names.slice().sort(function (a, b) { return b.length - a.length; });
     var precincts = topValues(json_trees_species_dim_8, 'precinct', 100);
     var ageValues = topValues(json_trees_species_dim_8, 'age_description', 20);
     var originValues = ['Native', 'Introduced', 'Exotic'];
@@ -1001,97 +1011,126 @@ var App = (function () {
         return "I can answer questions about tree counts, species, origins, canopy coverage, diversity grades, and park access. Try: <em>\"How many native trees in Carlton?\"</em> or <em>\"Which SA2 has the highest canopy?\"</em>";
     }
 
-    // ==================== DEEPSEEK AI (via proxy) ====================
+    // ==================== MAP COMMANDS (text -> map actions) ====================
 
-    var AI_PROXY = 'https://melbourne-forest-proxy.onrender.com';
+    // Layer keywords, checked in order — first match wins, so put specific phrases first
+    var LAYER_KEYWORDS = [
+        { re: /\bpark access\b/, layer: 'park-sa2' },
+        { re: /\bcanopy( cover(age)?)?\b/, layer: 'canopy' },
+        { re: /\b(tree )?diversity\b/, layer: 'diversity' },
+        { re: /\btree origin\b|\borigin (layer|map)\b/, layer: 'origin-sa2' },
+        { re: /\bbuildings?\b/, layer: 'buildings' },
+        { re: /\bneigh(bou)?rhood names\b|\bnames layer\b/, layer: 'sa2-names' },
+        { re: /\bparks\b/, layer: 'parks' },
+        { re: /\bboundaries\b|\bsa2 bound/, layer: 'sa2' },
+        { re: /\bmunicipal\b/, layer: 'municipal' },
+        { re: /\btrees?\b/, layer: 'trees' }
+    ];
 
-    var MAP_COMMANDS_SCHEMA =
-        'You can control the map by including a JSON block in your response.\n' +
-        'Wrap commands in ```json\\n{...}\\n``` so the frontend can parse them.\n\n' +
-        'Available commands (include only the ones needed):\n' +
-        '{\n' +
-        '  "layers": { "<name>": true/false },       // toggle layers on/off\n' +
-        '  "mode": { "<layer>": "<mode>" },           // change layer style mode\n' +
-        '  "area": "<SA2 name>" or "",                // filter to SA2 or "" for all\n' +
-        '  "treeFilter": { "field": "<prop>", "value": "<val>" } or null  // filter trees\n' +
-        '}\n\n' +
-        'Layer names: canopy, diversity, origin-sa2, buildings, trees, parks, sa2, municipal\n' +
-        'Layer modes:\n' +
-        '  canopy: grade, passfail, percent\n' +
-        '  diversity: species_grade, genus_grade, family_grade, species_passfail, genus_passfail, family_passfail\n' +
-        '  origin-sa2: native_pct, exotic_pct, introduced_pct, endemic_count\n' +
-        '  buildings: grade, passfail, distance\n' +
-        '  trees: origin, endemic, family, genus, species\n\n' +
-        'Tree filter fields: origin (Native/Introduced/Exotic), endemic (true/false), family, genus, common_name\n' +
-        'Set treeFilter to null to clear any active filter.\n';
-
-    var DATA_SCHEMA = 'Datasets:\n' +
-        '1. trees (82,064 records): common_name, scientific_name, genus, family, origin (Native/Introduced/Exotic), endemic (true/false), age_description, year_planted, precinct, diameter_breast_height\n' +
-        '2. sa2_canopy (18 SA2 areas): sa2_name21, canopy_percent, canopy_grade_5 (-5 to +5), pass_fail_30\n' +
-        '3. sa2_diversity (18 SA2 areas): sa2_name21, total_trees, max_species_pct, max_genus_pct, max_family_pct, species_grade, genus_grade, family_grade, species_pass, genus_pass, family_pass\n' +
-        '4. sa2_origin (18 SA2 areas): sa2_name21, total_trees, native_percent, introduced_percent, exotic_percent, endemic_count\n' +
-        '5. buildings (15,225 records): routing_distance_m, pass_fail_300, park_access_grade\n';
-
-    function buildAIPrompt(question, localAnswer) {
-        var stats = 'Quick stats: ' + trees.length + ' total trees, ' + sa2Names.length + ' SA2 neighborhoods (' + sa2Names.join(', ') + ').\n';
-        stats += 'Top species: ' + topSpecies.join(', ') + '.\n';
-        stats += 'Top families: ' + topFamilies.join(', ') + '.\n';
-        if (localAnswer) stats += '\nLocal query engine result: ' + localAnswer.replace(/<[^>]+>/g, '') + '\n';
-
-        return 'You are a helpful assistant for the Melbourne Urban Forest Dashboard. You can both answer questions AND control the map.\n\n' +
-            DATA_SCHEMA + '\n' + stats + '\n' +
-            MAP_COMMANDS_SCHEMA + '\n' +
-            'Rules:\n' +
-            '- If the user asks to SHOW, FILTER, HIGHLIGHT, or DISPLAY something on the map, include a JSON command block AND a short explanation (1-2 sentences).\n' +
-            '- If the user just asks a QUESTION (how many, which, what), answer concisely (2-3 sentences) using the local data. Only include JSON commands if it helps illustrate the answer.\n' +
-            '- If the user says "reset", "clear", or "show all", return commands to clear filters and show default layers.\n' +
-            '- Always keep your text answer SHORT.\n\n' +
-            'Question: ' + question;
+    function findLayer(q) {
+        for (var i = 0; i < LAYER_KEYWORDS.length; i++) {
+            if (LAYER_KEYWORDS[i].re.test(q)) return LAYER_KEYWORDS[i].layer;
+        }
+        return null;
     }
 
-    // Active tree filter state
-    var activeTreeFilter = null;
+    // Whole-word match, so "Oak" doesn't match inside another word and
+    // punctuation in names ("Kensington (Vic.)") is matched literally
+    function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+    function matchListWord(q, list) {
+        for (var i = 0; i < list.length; i++) {
+            var v = list[i];
+            if (!v) continue;
+            var re = new RegExp('(^|[^a-z0-9])' + escapeRe(v.toLowerCase()) + '($|[^a-z0-9])', 'i');
+            if (re.test(q)) return v;
+        }
+        return null;
+    }
 
-    function applyTreeFilter(filter) {
-        activeTreeFilter = filter;
-        var treesOn = map.hasLayer(activeTreeGroup);
-        if (treesOn) map.removeLayer(activeTreeGroup);
-        plainTreeGroup.clearLayers();
+    function setSelect(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.value = value;
+    }
 
-        var matching;
-        if (filter) {
-            matching = allTreeMarkers.filter(function (m) {
-                var val = m.feature.properties[filter.field];
-                if (val === undefined || val === null) return false;
-                return String(val).toLowerCase() === String(filter.value).toLowerCase();
-            });
-            // Also respect area filter
-            if (currentFilter) {
-                matching = matching.filter(function (m) { return m.feature.properties._sa2 === currentFilter; });
-            }
-        } else {
-            // No tree filter — respect area filter only
-            matching = currentFilter
-                ? allTreeMarkers.filter(function (m) { return m.feature.properties._sa2 === currentFilter; })
-                : allTreeMarkers;
+    function syncLayerCheckbox(name, on) {
+        var cb = document.querySelector('#panel-' + name + ' input[type=checkbox]');
+        if (cb) cb.checked = on;
+    }
+
+    // Returns an HTML confirmation string if the text was handled as a command, else null
+    function tryMapCommand(question) {
+        var q = question.toLowerCase().trim();
+
+        // Questions about the data are not commands — let the query engine answer them
+        if (/\b(how many|which|what|who|why|when|where|top|most common|highest|lowest|average|compare|summary|overview|tell me about)\b/.test(q)) return null;
+
+        var isCommand = /\b(show|display|filter|highlight|turn on|turn off|hide|remove|reset|clear|only)\b/.test(q);
+        if (!isCommand) return null;
+
+        var done = [];
+
+        // --- Reset / clear everything ---
+        if (/\b(reset|clear|start over|show (me )?(all|everything))\b/.test(q) && !findLayer(q)) {
+            setSelect('area-filter', '');
+            setAreaFilter('');
+            resetTreeFilters();
+            return 'Map reset — filters cleared and zoomed back to all of Melbourne.';
         }
 
-        matching.forEach(function (m) { plainTreeGroup.addLayer(m); });
-
-        // Make sure trees layer is on when filtering
-        if (filter && !treesOn) treesOn = true;
-        if (treesOn) plainTreeGroup.addTo(map);
-        layers.trees = plainTreeGroup;
-
-        // Update count
-        var countEl = document.querySelector('#panel-trees .layer-count');
-        if (countEl) countEl.textContent = matching.length.toLocaleString();
-
-        // Turn on trees checkbox if it was off
-        if (filter) {
-            var cb = document.querySelector('#panel-trees input[type=checkbox]');
-            if (cb && !cb.checked) cb.checked = true;
+        // --- Area filter: "filter to Carlton" ---
+        var area = matchListWord(q, sa2NamesByLength);
+        if (area) {
+            setSelect('area-filter', area);
+            setAreaFilter(area);
+            done.push('zoomed to <span class="chat-highlight">' + area + '</span>');
         }
+
+        // --- Tree attribute filters ---
+        var origin = matchListWord(q, originValues);
+        var endemic = /\bendemic\b/.test(q);
+        var family = matchListWord(q, allFamilies);
+        var species = matchListWord(q, allSpecies);
+        var treeFilterUsed = origin || endemic || family || species;
+
+        if (treeFilterUsed) {
+            setSelect('filter-tree-origin', origin || '');
+            setSelect('filter-tree-endemic', endemic ? 'true' : '');
+            setSelect('filter-tree-family', family || '');
+            setSelect('filter-tree-species', species || '');
+
+            toggleLayer('trees', true);
+            syncLayerCheckbox('trees', true);
+            applyUITreeFilter();
+
+            var what = [];
+            if (origin) what.push(origin.toLowerCase());
+            if (endemic) what.push('endemic');
+            if (species) what.push(species);
+            else if (family) what.push(family);
+            done.push('showing only <span class="chat-highlight">' + what.join(' ') + '</span> trees');
+        }
+
+        // --- Layer on/off ---
+        var layer = findLayer(q);
+        var turningOff = /\b(turn off|hide|remove)\b/.test(q);
+        if (layer && !(layer === 'trees' && treeFilterUsed)) {
+            toggleLayer(layer, !turningOff);
+            syncLayerCheckbox(layer, !turningOff);
+            done.push((turningOff ? 'hid ' : 'showing ') + '<span class="chat-highlight">' + layerLabel(layer) + '</span>');
+        }
+
+        if (!done.length) return null;
+        return 'Done — ' + done.join(' and ') + '.';
+    }
+
+    function layerLabel(name) {
+        var labels = {
+            'canopy': 'Canopy Coverage', 'diversity': 'Tree Diversity', 'origin-sa2': 'Tree Origin',
+            'park-sa2': 'Park Access', 'buildings': 'Park Access (buildings)', 'trees': 'Trees',
+            'parks': 'Parks', 'sa2': 'SA2 Boundaries', 'sa2-names': 'Neighborhood Names',
+            'municipal': 'Municipal Boundary'
+        };
+        return labels[name] || name;
     }
 
     // ==================== UI FILTERS ====================
@@ -1211,94 +1250,6 @@ var App = (function () {
             });
     })();
 
-    function executeMapCommands(cmd) {
-        if (!cmd) return;
-        try {
-            // Toggle layers
-            if (cmd.layers) {
-                Object.keys(cmd.layers).forEach(function (name) {
-                    toggleLayer(name, cmd.layers[name]);
-                    // Sync checkbox
-                    var cb = document.querySelector('#panel-' + name + ' input[type=checkbox]');
-                    if (cb) cb.checked = cmd.layers[name];
-                });
-            }
-            // Change modes
-            if (cmd.mode) {
-                Object.keys(cmd.mode).forEach(function (layer) {
-                    var sel = document.getElementById('mode-' + layer);
-                    if (sel) {
-                        sel.value = cmd.mode[layer];
-                        updateStyle(layer, cmd.mode[layer]);
-                    }
-                });
-            }
-            // Area filter
-            if (cmd.area !== undefined) {
-                var sel = document.getElementById('area-filter');
-                if (sel) sel.value = cmd.area;
-                setAreaFilter(cmd.area);
-            }
-            // Tree filter
-            if (cmd.treeFilter !== undefined) {
-                applyTreeFilter(cmd.treeFilter);
-            }
-        } catch (e) {
-            console.error('Map command error:', e);
-        }
-    }
-
-    function parseCommands(text) {
-        var match = text.match(/```json\s*([\s\S]*?)\s*```/);
-        if (match) {
-            try { return JSON.parse(match[1]); } catch (e) { return null; }
-        }
-        return null;
-    }
-
-    function cleanResponse(text) {
-        // Remove the JSON block from the displayed text
-        return text.replace(/```json[\s\S]*?```/g, '').trim();
-    }
-
-    var aiMode = 'none'; // 'proxy' or 'none'
-    var activeProxy = '';
-
-    // Try local proxy first (dev), then production proxy
-    (function detectProxy() {
-        var urls = ['http://localhost:3001', AI_PROXY];
-        var idx = 0;
-        function tryNext() {
-            if (idx >= urls.length) return;
-            fetch(urls[idx] + '/health').then(function (r) {
-                if (r.ok) {
-                    aiMode = 'proxy';
-                    activeProxy = urls[idx];
-                    var btn = document.getElementById('ai-connect-btn');
-                    if (btn) { btn.classList.add('connected'); btn.textContent = 'DeepSeek AI active ✓'; }
-                } else { idx++; tryNext(); }
-            }).catch(function () { idx++; tryNext(); });
-        }
-        tryNext();
-    })();
-
-    async function askAI(question) {
-        if (aiMode === 'none' || !activeProxy) return null;
-        var localAnswer = smartAnswer(question);
-        var prompt = buildAIPrompt(question, localAnswer);
-        try {
-            var resp = await fetch(activeProxy + '/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ system: prompt, question: question })
-            });
-            var data = await resp.json();
-            return data.answer || null;
-        } catch (e) {
-            return null;
-        }
-    }
-
     // ==================== CHAT UI ====================
 
     function addMessage(text, sender) {
@@ -1310,29 +1261,16 @@ var App = (function () {
         container.scrollTop = container.scrollHeight;
     }
 
-    async function ask() {
+    function ask() {
         var input = document.getElementById('chat-input');
         var question = input.value.trim();
         if (!question) return;
         input.value = '';
         addMessage(question, 'user');
 
-        if (aiMode !== 'none') {
-            addMessage('<em>Thinking...</em>', 'bot');
-            var aiAnswer = await askAI(question);
-            var msgs = document.getElementById('chat-messages');
-            msgs.removeChild(msgs.lastChild);
-            if (aiAnswer) {
-                var cmds = parseCommands(aiAnswer);
-                var display = cleanResponse(aiAnswer);
-                addMessage(display || 'Done!', 'bot');
-                if (cmds) executeMapCommands(cmds);
-            } else {
-                addMessage(smartAnswer(question), 'bot');
-            }
-        } else {
-            addMessage(smartAnswer(question), 'bot');
-        }
+        // Map commands first ("show only native trees"), then data questions
+        var commandResult = tryMapCommand(question);
+        addMessage(commandResult || smartAnswer(question), 'bot');
     }
 
     // ==================== INIT ====================

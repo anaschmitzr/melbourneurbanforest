@@ -61,6 +61,33 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
     font-weight: 400;
 }
 
+.header-info-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid #2a3a6a;
+    border-radius: 6px;
+    color: #8fb8e8;
+    font-family: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-align: left;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.header-info-btn:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: #4a6abf;
+    color: #bcd9f7;
+}
+.header-info-arrow { flex-shrink: 0; font-size: 12px; }
+
 /* ===== SIDEBAR CONTENT ===== */
 .sidebar-content {
     flex: 1;
@@ -477,79 +504,6 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
 }
 #chat-send:hover { background: #22884c; }
 
-#ai-connect-btn {
-    background: none;
-    border: none;
-    border-top: 1px solid #222c4a;
-    color: #5b6ea8;
-    font-size: 11px;
-    padding: 7px;
-    cursor: pointer;
-    text-align: center;
-    font-family: inherit;
-    transition: color 0.2s;
-}
-#ai-connect-btn:hover { color: #7b8db5; }
-#ai-connect-btn.connected { color: #4ade80; }
-
-/* ===== AI MODAL ===== */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 2000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.modal-box {
-    background: #16213e;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 24px;
-    width: 380px;
-    max-width: 90vw;
-    color: #c0c8e0;
-}
-.modal-box h3 { font-size: 16px; color: #fff; margin-bottom: 8px; }
-.modal-box p { font-size: 12px; color: #8899bb; margin-bottom: 12px; line-height: 1.5; }
-.modal-box input[type="text"] {
-    width: 100%;
-    padding: 8px 10px;
-    background: #0d1b3e;
-    border: 1px solid #2a2a4a;
-    border-radius: 6px;
-    color: #c0c8e0;
-    font-size: 12px;
-    font-family: inherit;
-    margin-bottom: 12px;
-    outline: none;
-}
-.modal-box input:focus { border-color: #4a6abf; }
-.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn-primary {
-    background: #1a6b3c;
-    color: #fff;
-    border: none;
-    padding: 7px 18px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: inherit;
-}
-.btn-secondary {
-    background: #2a2a4a;
-    color: #c0c8e0;
-    border: none;
-    padding: 7px 18px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: inherit;
-}
-.ai-status { font-size: 11px; margin-top: 8px; }
-.ai-status.ok { color: #4ade80; }
-.ai-status.err { color: #f87171; }
 
 /* ===== SCALE BAR ===== */
 .leaflet-control-scale-line {
@@ -910,7 +864,9 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
     display: flex; align-items: center; justify-content: center; transition: background 0.15s;
 }
 .help-close-x:hover { background: rgba(255,255,255,0.28); }
-.help-modal-body { padding: 26px 28px; overflow-y: auto; height: min(560px, calc(90vh - 150px)); flex-shrink: 0; }
+/* Fixed height so the footer never shifts between steps. Sized to the tallest
+   step (Ask the data), and capped on short viewports. */
+.help-modal-body { padding: 26px 28px; overflow-y: auto; height: min(492px, calc(90vh - 150px)); flex-shrink: 0; }
 .help-step { display: none; }
 .help-step.active { display: block; animation: helpFade 0.25s ease; }
 @keyframes helpFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -923,6 +879,7 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
     display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
 }
 .help-step p { font-size: 14px; line-height: 1.65; color: #3a4750; margin-bottom: 13px; }
+.help-step > *:last-child { margin-bottom: 0; }
 .help-step p strong { color: #12385c; font-weight: 600; }
 
 .help-cap-list { margin: 16px 0 4px; }
@@ -939,15 +896,6 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
 .help-c-text { font-size: 13.5px; line-height: 1.5; color: #3a4750; }
 .help-c-text b { color: #12385c; font-weight: 600; }
 
-.help-branch-btn {
-    display: flex; align-items: center; justify-content: space-between; width: 100%;
-    background: #f4f7f4; border: 1px solid #dbe4db; border-radius: 10px;
-    padding: 13px 16px; margin-top: 18px; cursor: pointer;
-    font-size: 13.5px; font-weight: 600; color: #1a5c8f; transition: background 0.15s; text-align: left;
-    font-family: inherit;
-}
-.help-branch-btn:hover { background: #eaf0ea; }
-.help-arrow { color: #6b7680; font-size: 15px; }
 
 .help-ref-links { margin-top: 6px; }
 .help-ref-title {
@@ -1021,6 +969,166 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
 }
 .help-tree-drow b { color: #12385c; font-weight: 600; }
 
+/* Two-column layout: mocks align on row 1, captions align on row 2 */
+.help-side-by-side {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
+    /* stretch so both mocks end up the same height */
+    align-items: stretch;
+    margin: 12px 0 20px;
+}
+.help-side-by-side .help-mock,
+.help-side-by-side .help-focus-mock { margin: 0; }
+.help-col-caption {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: #3a4750;
+}
+.help-col-caption strong { color: #12385c; font-weight: 600; }
+@media (max-width: 620px) {
+    .help-side-by-side { grid-template-columns: 1fr; }
+}
+
+/* Two independent columns — each visual sits directly under its own text.
+   (.help-side-by-side instead aligns the two columns on shared rows.) */
+.help-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items: start;
+    margin: 12px 0 16px;
+}
+.help-cols > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.help-cols .help-col-caption,
+.help-cols .help-mock,
+.help-cols .help-chat-mock,
+.help-cols .help-chat-note,
+.help-cols .help-tree-panel-mock,
+.help-cols .help-origin-chips,
+.help-cols .help-grade-block { margin: 0; }
+.help-cols .help-grade-labels { margin: 0 0 4px; }
+.help-cols .help-grade-legend { margin: 0; }
+/* Uneven splits: the visual takes 2/3, the prose 1/3 */
+.help-cols.wide-left { grid-template-columns: 2fr 1fr; }
+.help-cols.wide-right { grid-template-columns: 1fr 2fr; }
+@media (max-width: 620px) {
+    .help-cols,
+    .help-cols.wide-left,
+    .help-cols.wide-right { grid-template-columns: 1fr; }
+}
+
+/* Grade scale has to fit a half-width column, so tighten it there */
+.help-cols .help-grade-labels { font-size: 10px; }
+.help-cols .help-grade-legend { gap: 3px; }
+.help-cols .help-grade-cell { height: 24px; font-size: 10px; }
+
+/* Small map thumbnails (generated from the map's own GeoJSON) */
+.help-map-thumb {
+    border: 1px solid #e0e6ea;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f4f7f9;
+    line-height: 0;
+}
+.help-map-thumb svg { display: block; width: 100%; height: auto; }
+.help-thumb-cap {
+    font-size: 10.5px;
+    color: #8a949c;
+    text-align: center;
+}
+
+/* Sidebar section label, reproduced inside a mock panel */
+.help-mock-section-title {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #7b8a97;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* Closing line: centred, double-spaced from the line above */
+.help-closing {
+    font-size: 13px;
+    text-align: center;
+    margin-top: 26px;
+}
+
+/* Inline pinpoint icon, mirrors the real locate button on the map */
+.help-pin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 5px;
+    background: #fff;
+    border: 1px solid #dbe4db;
+    color: #333;
+    font-size: 11px;
+    line-height: 1;
+    vertical-align: middle;
+    position: relative;
+    top: -2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+}
+
+/* Focus Area mock — mirrors the real sidebar control */
+.help-focus-mock {
+    background: linear-gradient(135deg, #0f3460, #16213e);
+    border: 1px solid #2a3a6a;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 2px 0 10px;
+}
+.help-focus-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #7b8db5;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.help-focus-select {
+    background: #0a1a3a;
+    border: 1px solid #4a6abf;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.help-focus-chev { color: #7b8db5; font-size: 10px; }
+.help-focus-list {
+    margin-top: 4px;
+    background: #0a1a3a;
+    border: 1px solid #2a3a6a;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.help-focus-opt {
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #c0c8e0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.help-focus-opt:last-child { border-bottom: none; }
+.help-focus-opt.active {
+    background: rgba(76, 175, 110, 0.18);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 #4caf6e;
+}
+.help-focus-opt.dim { color: #6b7db3; font-style: italic; }
+
 .help-origin-chips { display: flex; gap: 8px; margin: 12px 0; }
 .help-origin-chip { flex: 1; text-align: center; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #fff; }
 
@@ -1034,6 +1142,7 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
     background: rgba(255,255,255,0.06); border-radius: 9px 9px 9px 2px;
     padding: 10px 12px; font-size: 12px; color: #dfe6ea; line-height: 1.7;
 }
+.help-chat-a + .help-chat-q { margin-top: 12px; }
 .help-chat-head { color: #9aa8b3; margin-bottom: 4px; }
 .help-chat-row b { color: #7cc48f; }
 .help-accent { color: #6fb3e0; font-weight: 600; }
@@ -1042,6 +1151,31 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
     padding: 11px 14px; font-size: 12.5px; line-height: 1.55; color: #7a5c1a; margin-top: 12px;
 }
 .help-chat-note b { color: #5c4410; }
+
+/* Input row, mirroring the real chat panel */
+.help-chat-input-row {
+    display: flex;
+    align-items: stretch;
+    margin-top: 10px;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.10);
+}
+.help-chat-input {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    color: #6b7a8a;
+    font-size: 11.5px;
+    padding: 7px 10px;
+}
+.help-chat-send {
+    display: flex;
+    align-items: center;
+    background: #2e7d4f;
+    color: #dff0e6;
+    padding: 7px 12px;
+    font-size: 12px;
+}
 
 .help-modal-footer {
     border-top: 1px solid #eef1ee; padding: 16px 28px;
@@ -1064,7 +1198,8 @@ html, body { width: 100%; height: 100%; font-family: 'Segoe UI', system-ui, -app
 
 .help-branch-footer {
     border-top: 1px solid #eef1ee; padding: 16px 28px;
-    display: flex; align-items: center; background: #fbfcfb; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: flex-end;
+    background: #fbfcfb; flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
