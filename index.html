@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/leaflet.css">
     <link rel="stylesheet" href="css/L.Control.Locate.min.css">
     <link rel="stylesheet" href="css/fontawesome-all.min.css">
-    <link rel="stylesheet" href="css/app.css?v=3">
+    <link rel="stylesheet" href="css/app.css?v=6">
 </head>
 <body>
 
@@ -306,7 +306,221 @@
     </div>
 </div>
 
+<!-- Help Modal -->
+<div class="help-backdrop" id="helpBackdrop" style="display:none;">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <h1 id="helpModalTitle">Melbourne Urban Forest Dashboard</h1>
+      <p id="helpModalSubtitle">Visualisation of tree quantity and quality</p>
+      <button class="help-close-x" onclick="HelpModal.close()">&times;</button>
+    </div>
+    <div class="help-modal-body">
+
+      <div class="help-step active" data-step="0">
+        <h2><span class="help-icon">&#128075;</span> Welcome to the dashboard</h2>
+        <p>This dashboard brings together Melbourne's urban forest, <strong>82,000+ trees across 18 neighbourhoods</strong>, so you can explore how green the city is, and how fairly that greenery is shared.</p>
+        <p style="margin-bottom:6px;">Here's what you can do:</p>
+        <div class="help-cap-list">
+          <div class="help-cap-item"><span class="help-c-icon">&#127960;&#65039;</span><span class="help-c-text"><b>Compare neighbourhoods</b> across canopy coverage, park access, tree diversity, and ecological origin.</span></div>
+          <div class="help-cap-item"><span class="help-c-icon">&#128205;</span><span class="help-c-text"><b>Explore individual trees</b>: click any of the 82,064 trees for its species, size, and live photo.</span></div>
+          <div class="help-cap-item"><span class="help-c-icon">&#128172;</span><span class="help-c-text"><b>Ask the data</b>: a built-in tool answers specific questions straight from the dataset.</span></div>
+          <div class="help-cap-item"><span class="help-c-icon">&#129517;</span><span class="help-c-text"><b>Add context layers</b>: parks, boundaries, neighbourhood names, plus search and measure tools.</span></div>
+        </div>
+        <button class="help-branch-btn" onclick="HelpModal.openBranch()"><span>&#128161; The idea behind it &amp; benchmark references</span><span class="help-arrow">&rarr;</span></button>
+      </div>
+
+      <div class="help-step" data-step="1">
+        <h2><span class="help-icon">&#127960;&#65039;</span> Neighbourhood analysis</h2>
+        <p>Toggle any of the four neighbourhood metrics on the left to colour the map by that measure.</p>
+        <div class="help-mock">
+          <div class="help-mock-toggle on highlight"><span class="help-mock-label"><span class="help-sw"></span> Canopy Coverage</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
+          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Tree Diversity</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
+          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Tree Origin (SA2)</span><span class="help-mock-right"><span class="help-mock-count">18</span><span class="help-chev-r">&#9656;</span></span></div>
+          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Park Access</span><span class="help-mock-right"><span class="help-mock-count">15,225</span><span class="help-chev-r">&#9656;</span></span></div>
+        </div>
+        <p>Each metric has a benchmark drawn from international greening standards. Toggle between a simple Pass / Fail view, or a graded system from &minus;5 to +5, anchored at the benchmark (0).</p>
+        <div class="help-grade-labels"><span>Worst</span><span>Benchmark (0)</span><span>Best</span></div>
+        <div class="help-grade-legend">
+          <div class="help-grade-cell" style="background:#a50026">&minus;5</div>
+          <div class="help-grade-cell" style="background:#d73027">&minus;4</div>
+          <div class="help-grade-cell" style="background:#f46d43">&minus;3</div>
+          <div class="help-grade-cell" style="background:#fdae61">&minus;2</div>
+          <div class="help-grade-cell" style="background:#fee08b;color:#7a5c00">&minus;1</div>
+          <div class="help-grade-cell" style="background:#ffffbf;color:#7a5c00">0</div>
+          <div class="help-grade-cell" style="background:#d9ef8b;color:#3a5c00">1</div>
+          <div class="help-grade-cell" style="background:#a6d96a;color:#2a4c00">2</div>
+          <div class="help-grade-cell" style="background:#66bd63">3</div>
+          <div class="help-grade-cell" style="background:#1a9850">4</div>
+          <div class="help-grade-cell" style="background:#006837">5</div>
+        </div>
+        <p style="font-size:13px; margin-top:14px;">Use the dropdown to switch views. <strong>Tree Diversity</strong> can be seen by species, genus, or family, and <strong>Park Access</strong> per building or per neighbourhood.</p>
+      </div>
+
+      <div class="help-step" data-step="2">
+        <h2><span class="help-icon">&#128205;</span> Individual trees</h2>
+        <p>Turn on the <strong>Trees</strong> layer to see all 82,064 trees as points on the map, coloured by ecological origin.</p>
+        <div class="help-origin-chips">
+          <div class="help-origin-chip" style="background:#1a9850">Native</div>
+          <div class="help-origin-chip" style="background:#fdae61">Introduced</div>
+          <div class="help-origin-chip" style="background:#a50026">Exotic</div>
+        </div>
+        <p style="font-size:13px;">A dropdown lets you colour trees by origin, family, genus, or species, and the <strong>filters</strong> narrow the view by origin, family, or species. Click any tree to open a panel with its details, a live photo, and an ecology summary pulled from Wikipedia and iNaturalist:</p>
+        <div class="help-tree-panel-mock">
+          <div class="help-tree-photo">&#127807;</div>
+          <div class="help-tree-info">
+            <h4>Lightwood Wattle</h4>
+            <div class="help-tree-sci">Acacia implexa</div>
+            <span class="help-tree-badge">Native to Victoria</span>
+            <div class="help-tree-rows">
+              <div class="help-tree-drow"><span>Family</span><b>Fabaceae</b></div>
+              <div class="help-tree-drow"><span>Planted</span><b>2019</b></div>
+              <div class="help-tree-drow"><span>Located in</span><b>Park</b></div>
+            </div>
+            <div class="help-tree-links"><span>&#8599; Wikipedia</span><span>&#8599; iNaturalist</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="help-step" data-step="3">
+        <h2><span class="help-icon">&#128172;</span> Ask the data</h2>
+        <p>The <strong>Ask the Data</strong> tool retrieves answers directly from the dashboard's database. It's not a general AI chatbot. It looks things up in the dataset, so it works best with <strong>specific, data-shaped questions</strong>.</p>
+        <div class="help-chat-mock">
+          <div class="help-chat-q">which species are the most common in Carlton?</div>
+          <div class="help-chat-a">
+            <div class="help-chat-head">Top species in <span class="help-accent">Carlton</span>:</div>
+            <div class="help-chat-row">1. <b>London Plane</b>: 645 trees</div>
+            <div class="help-chat-row">2. <b>English Elm</b>: 296 trees</div>
+            <div class="help-chat-row">3. <b>European nettle tree</b>: 182 trees</div>
+          </div>
+        </div>
+        <div class="help-chat-note"><b>Tip:</b> name a neighbourhood and what you want to know: species counts, canopy rankings, origin breakdowns. Open-ended or opinion questions won't return results.</div>
+      </div>
+
+      <div class="help-step" data-step="4">
+        <h2><span class="help-icon">&#129517;</span> Reference layers &amp; tools</h2>
+        <p>Add context to the map with independent layers you can toggle on or off:</p>
+        <div class="help-mock">
+          <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> Parks (&ge;0.5ha)</span></div>
+          <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> SA2 Boundaries</span></div>
+          <div class="help-mock-toggle"><span class="help-mock-label"><span class="help-sw"></span> Neighborhood Names</span></div>
+          <div class="help-mock-toggle on"><span class="help-mock-label"><span class="help-sw"></span> Municipal Boundary</span></div>
+        </div>
+        <p style="font-size:13px;">Use the <strong>Focus Area</strong> dropdown at the top to zoom to a single neighbourhood, or the <strong>search</strong> and <strong>measure</strong> tools to explore addresses and distances. That's it. Enjoy exploring Melbourne's urban forest!</p>
+      </div>
+
+      <div class="help-step" data-step="branch">
+        <h2><span class="help-icon">&#128161;</span> The idea behind this dashboard</h2>
+        <p>Trees cool streets, manage stormwater, support biodiversity, and improve the wellbeing of residents. But these benefits flow mostly to those living close to the canopy, making <strong>where trees are a question of equity.</strong></p>
+        <p>This dashboard maps canopy coverage, park access, tree diversity, and ecological origin across 82,000+ trees and 18 Melbourne neighbourhoods. It brings together multiple dimensions of Melbourne's urban forest in one place, building on established international benchmarks and extending them with a graded analysis and an ecological origin layer.</p>
+        <div class="help-ref-links">
+          <div class="help-ref-title">Benchmark references</div>
+          <a class="help-ref-item" href="https://www.330300rule.com/" target="_blank"><span class="help-ref-num">01</span><span class="help-ref-txt">3-30-300 Rule <span class="help-ref-dim">&middot; canopy coverage &amp; park access benchmark</span></span><span class="help-ref-ext">&#8599;</span></a>
+          <a class="help-ref-item" href="https://blog.ebben.nl/en/10-20-30-rule-santamour" target="_blank"><span class="help-ref-num">02</span><span class="help-ref-txt">Santamour's 10-20-30 Rule <span class="help-ref-dim">&middot; species diversity benchmark</span></span><span class="help-ref-ext">&#8599;</span></a>
+          <a class="help-ref-item" href="https://www.nature.com/articles/s41467-024-53402-2" target="_blank"><span class="help-ref-num">03</span><span class="help-ref-txt">Croeser et al. (2024) <span class="help-ref-dim">&middot; graduated grading methodology</span></span><span class="help-ref-ext">&#8599;</span></a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="help-modal-footer" id="helpLinearFooter">
+      <div class="help-footer-left">
+        <label class="help-dontshow"><input type="checkbox" id="helpDontShow"> Don't show again</label>
+      </div>
+      <div class="help-dots" id="helpDots">
+        <span class="help-dot active" onclick="HelpModal.go(0)"></span>
+        <span class="help-dot" onclick="HelpModal.go(1)"></span>
+        <span class="help-dot" onclick="HelpModal.go(2)"></span>
+        <span class="help-dot" onclick="HelpModal.go(3)"></span>
+        <span class="help-dot" onclick="HelpModal.go(4)"></span>
+      </div>
+      <div class="help-nav-btns">
+        <button class="help-btn help-btn-ghost" id="helpBackBtn" onclick="HelpModal.prev()" disabled>Back</button>
+        <button class="help-btn help-btn-primary" id="helpNextBtn" onclick="HelpModal.next()">Next</button>
+      </div>
+    </div>
+
+    <div class="help-branch-footer" id="helpBranchFooter" style="display:none;">
+      <button class="help-btn help-btn-ghost" onclick="HelpModal.closeBranch()">&larr; Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal controller -->
+<script>
+var HelpModal = (function () {
+    var current = 0;
+    var total = 5;
+    var STORAGE_KEY = 'muf_hide_help';
+
+    function render() {
+        var steps = document.querySelectorAll('.help-step');
+        steps.forEach(function (s) {
+            s.classList.toggle('active', s.dataset.step == current);
+        });
+        document.querySelectorAll('.help-dot').forEach(function (d, i) {
+            d.classList.toggle('active', i === current);
+        });
+        document.getElementById('helpBackBtn').disabled = current === 0;
+        document.getElementById('helpNextBtn').textContent = current === total - 1 ? 'Start exploring' : 'Next';
+    }
+    function next() {
+        if (current < total - 1) { current++; render(); }
+        else { close(); }
+    }
+    function prev() { if (current > 0) { current--; render(); } }
+    function go(i) { current = i; render(); }
+
+    function openBranch() {
+        document.querySelectorAll('.help-step').forEach(function (s) {
+            s.classList.toggle('active', s.dataset.step === 'branch');
+        });
+        document.getElementById('helpLinearFooter').style.display = 'none';
+        document.getElementById('helpBranchFooter').style.display = 'flex';
+        document.getElementById('helpModalTitle').textContent = 'The idea & references';
+        document.getElementById('helpModalSubtitle').textContent = 'Why this dashboard exists';
+        document.querySelector('.help-modal-body').scrollTop = 0;
+    }
+    function closeBranch() {
+        document.getElementById('helpLinearFooter').style.display = 'flex';
+        document.getElementById('helpBranchFooter').style.display = 'none';
+        document.getElementById('helpModalTitle').textContent = 'Melbourne Urban Forest Dashboard';
+        document.getElementById('helpModalSubtitle').textContent = 'Visualisation of tree quantity and quality';
+        render();
+        document.querySelector('.help-modal-body').scrollTop = 0;
+    }
+
+    function open() {
+        current = 0;
+        render();
+        document.getElementById('helpBackdrop').style.display = 'flex';
+    }
+    function close() {
+        var cb = document.getElementById('helpDontShow');
+        if (cb && cb.checked) {
+            try { localStorage.setItem(STORAGE_KEY, '1'); } catch (e) {}
+        }
+        document.getElementById('helpBackdrop').style.display = 'none';
+    }
+
+    // Show on load unless user opted out
+    var suppressed = false;
+    try { suppressed = localStorage.getItem(STORAGE_KEY) === '1'; } catch (e) {}
+    if (!suppressed) {
+        window.addEventListener('load', function () {
+            setTimeout(open, 400);
+        });
+    }
+
+    // Close on backdrop click (outside the modal box)
+    document.getElementById('helpBackdrop').addEventListener('click', function (e) {
+        if (e.target === this) close();
+    });
+
+    return { open: open, close: close, next: next, prev: prev, go: go, openBranch: openBranch, closeBranch: closeBranch };
+})();
+</script>
+
 <!-- App -->
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>
