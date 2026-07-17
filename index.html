@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/leaflet.css">
     <link rel="stylesheet" href="css/L.Control.Locate.min.css">
     <link rel="stylesheet" href="css/fontawesome-all.min.css">
-    <link rel="stylesheet" href="css/app.css?v=25">
+    <link rel="stylesheet" href="css/app.css?v=28">
 </head>
 <body>
 
@@ -19,6 +19,7 @@
 
 <div id="sidebar">
     <div class="sidebar-header">
+        <button class="header-tour-btn" onclick="HelpModal.open()" title="Take a tour" aria-label="Take a tour">?</button>
         <h1>Melbourne Urban Forest</h1>
         <p>Green Infrastructure Analysis Dashboard</p>
         <button class="header-info-btn" onclick="HelpModal.openInfo()">
@@ -35,7 +36,9 @@
             </select>
         </div>
 
-        <div class="section-title">Neighborhood Analysis</div>
+        <div class="section-title">Neighborhood Analysis
+            <button class="section-help" onclick="HelpModal.openCard(1)" title="What is this?" aria-label="Help: Neighborhood Analysis">?</button>
+        </div>
 
         <!-- Canopy Coverage -->
         <div class="layer-panel" id="panel-canopy">
@@ -164,7 +167,9 @@
             </div>
         </div>
 
-        <div class="section-title">Individual Trees</div>
+        <div class="section-title">Individual Trees
+            <button class="section-help" onclick="HelpModal.openCard(2)" title="What is this?" aria-label="Help: Individual Trees">?</button>
+        </div>
 
         <!-- Trees -->
         <div class="layer-panel" id="panel-trees">
@@ -213,7 +218,9 @@
             </div>
         </div>
 
-        <div class="section-title">Reference Layers</div>
+        <div class="section-title">Reference Layers
+            <button class="section-help" onclick="HelpModal.openCard(4)" title="What is this?" aria-label="Help: Reference Layers">?</button>
+        </div>
 
         <!-- Parks -->
         <div class="layer-panel" id="panel-parks">
@@ -259,7 +266,9 @@
             </div>
         </div>
 
-        <div class="section-title">Ask the Data</div>
+        <div class="section-title">Ask the Data
+            <button class="section-help" onclick="HelpModal.openCard(3)" title="What is this?" aria-label="Help: Ask the Data">?</button>
+        </div>
         <div id="chat-panel">
             <div id="chat-messages">
                 <div class="chat-msg bot">
@@ -537,17 +546,29 @@ var HelpModal = (function () {
         document.getElementById('helpBackdrop').style.display = 'flex';
     }
 
-    // Opened from the permanent button in the sidebar header
-    function openInfo() {
+    // Show a single card on its own, with just a Close button — used by the
+    // header's references button and by the "?" next to each sidebar section.
+    function showSingle(stepId, title, subtitle) {
+        if (!thumbsBuilt) { try { buildThumbs(); } catch (e) {} thumbsBuilt = true; }
         document.querySelectorAll('.help-step').forEach(function (s) {
-            s.classList.toggle('active', s.dataset.step === 'branch');
+            s.classList.toggle('active', s.dataset.step === String(stepId));
         });
         document.getElementById('helpLinearFooter').style.display = 'none';
         document.getElementById('helpBranchFooter').style.display = 'flex';
-        document.getElementById('helpModalTitle').textContent = 'The idea & references';
-        document.getElementById('helpModalSubtitle').textContent = 'Why this dashboard exists';
+        document.getElementById('helpModalTitle').textContent = title;
+        document.getElementById('helpModalSubtitle').textContent = subtitle;
         document.querySelector('.help-modal-body').scrollTop = 0;
         document.getElementById('helpBackdrop').style.display = 'flex';
+    }
+
+    // Opened from the permanent button in the sidebar header
+    function openInfo() {
+        showSingle('branch', 'The idea & references', 'Why this dashboard exists');
+    }
+
+    // Opened from the "?" next to a sidebar section
+    function openCard(i) {
+        showSingle(i, 'Melbourne Urban Forest Dashboard', 'Visualisation of tree quantity and quality');
     }
     function close() {
         var cb = document.getElementById('helpDontShow');
@@ -650,7 +671,7 @@ var HelpModal = (function () {
         if (e.target === this) close();
     });
 
-    return { open: open, close: close, next: next, prev: prev, go: go, openInfo: openInfo };
+    return { open: open, close: close, next: next, prev: prev, go: go, openInfo: openInfo, openCard: openCard };
 })();
 </script>
 
