@@ -105,9 +105,9 @@ var App = (function () {
     });
     new LicenseControl().addTo(map);
 
-    L.tileLayer('https://a.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png', {
-        attribution: '&copy; CartoDB &copy; OpenStreetMap',
-        maxNativeZoom: 20, maxZoom: 20
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+        maxNativeZoom: 16, maxZoom: 20
     }).addTo(map);
 
     // Panes (z-order)
